@@ -1,0 +1,22 @@
+{
+  "name": "rd2weekly",
+  "version": "1.0.0",
+  "description": "A web scraper for generating weekly summaries of a CBS fantasy baseball league.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/swanysimon/rd2weekly.git"
+  },
+  "author": "Simon Swanson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/swanysimon/rd2weekly/issues"
+  },
+  "homepage": "https://github.com/swanysimon/rd2weekly#readme",
+  "dependencies": {
+    "geckodriver": "^1.16.0"
+  }
+}

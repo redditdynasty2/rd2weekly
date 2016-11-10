@@ -1,0 +1,55 @@
+{
+    "league_url": "https://reddit2.baseball.cbssports.com",
+    "divisions": [
+        {
+            "division": "AL East",
+            "teams": [
+                "Blue Jays",
+                "Indians",
+                "Orioles",
+                "Rays",
+                "Red Sox",
+                "Tigers",
+                "Yankees"
+            ]
+        },
+        {
+            "division": "AL West",
+            "teams": [
+                "Angels",
+                "Astros",
+                "Athletics",
+                "Mariners",
+                "Rangers",
+                "Royals",
+                "Twins",
+                "White Sox"
+            ]
+        },
+        {
+            "division": "NL East",
+            "teams": [
+                "Braves",
+                "Marlins",
+                "Mets",
+                "Nationals",
+                "Phillies",
+                "Pirates",
+                "Reds"
+            ]
+        },
+        {
+            "division": "NL West",
+            "teams": [
+                "Brewers",
+                "Cardinals",
+                "Cubs",
+                "Diamondbacks",
+                "Dodgers",
+                "Giants",
+                "Padres",
+                "Rockies"
+            ]
+        }
+    ]
+}
