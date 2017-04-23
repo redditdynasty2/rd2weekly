@@ -5,7 +5,8 @@ from bs4 import BeautifulSoup
 from src.scoring.bestTrio import BestTrio
 
 
-# TODO: finish functionality
+# TODO: finish functionality (scraping, updating player position info, etc.)
+# TODO: consider separating scraping and storing of data
 class TopPerformerParser:
     def __init__(self, scoreboard, browserSession):
         self.__scoreboard = scoreboard

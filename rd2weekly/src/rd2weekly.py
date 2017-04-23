@@ -13,13 +13,20 @@ __maintainer__ = "Simon Swanson"
 __email__ = "nomiswanson@gmail.com"
 __status__ = "Pre-alpha"
 
+
 class RD2Week:
     def __init__(self, week, leagueFile, recordFile, credentials):
         self.__leagueJson = JsonFileHandler(leagueFile)
         self.__recordJson = JsonFileHandler(recordFile)
-        self.__scoreboard = Scoreboard()
-        self.__topPerformers = TopPerformerParser()
         self.__browserSession = RD2BrowserSession(week, self.__leagueJson.originalJson["league_url"], credentials)
+        self.__scoreboard = Scoreboard()
+        self.__topPerformers = TopPerformerParser(self.__scoreboard, self.__browserSession)
+
+    def __enter__(self, week, leagueFile, recordFile, credentials):
+        return RD2Week(week, leagueFile, recordFile, credentials)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     @property
     def leagueJson(self):
@@ -43,16 +50,12 @@ class RD2Week:
 
     def parseScores(self):
         ScoreboardParser.parseScoreboard(self.scoreboard, self.browserSession)
-        TopPerformerParser.parseTopPerformers(self.scoreboard, self.browserSession)
+        self.topPerformers.parseTopPerformers()
 
     def generateSummary(self):
         self.leagueJson.writeChangesBack()
         self.recordJson.writeChangesBack()
         RedditSummary(self.scoreboard, self.topPerformers, self.recordJson).generateSummary()
-
-    def __generateRedditSummary(self):
-        redditSummary = RedditSummary(self.scoreboard, self.topPerformers, self.recordJson)
-        return redditSummary
 
     def close(self):
         self.browserSession.driver.close()
