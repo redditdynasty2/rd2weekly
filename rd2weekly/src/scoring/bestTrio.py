@@ -23,7 +23,8 @@ class BestTrio(Trio):
         while spot <= 3:
             if self.__jumpSpotIfAllowed(spot, newPoints):
                 self.__pruneToTopThree()
-                break
+                return True
+        return False
 
     def __jumpSpotIfAllowed(self, spot, newPoints):
         comparison = self.__pointComparison(spot, newPoints)
@@ -35,15 +36,21 @@ class BestTrio(Trio):
 
 
     def __pointComparison(self, spot, newPoints):
-        existingPoints = self.first if spot == 1 \
-            else self.second if spot == 2 \
-            else self.third
-        if not existingPoints:
-            return 1
-        else:
+        existingPoints = self.__getExistingPointsFromSpot(spot)
+        if existingPoints:
             ourPoints = existingPoints[0]
             multiplier = -1 if self.__reverse else 1
             return multiplier * ((newPoints > ourPoints) - (newPoints < ourPoints))
+        else:
+            return 1
+
+    def __getExistingPointsFromSpot(self, spot):
+        if spot == 1:
+            return self.first
+        elif spot == 2:
+            return self.second
+        else:
+            return self.third
 
     def __jumpSpot(self, spot, newPoints):
         i = 3
@@ -60,9 +67,7 @@ class BestTrio(Trio):
 
 
     def __addToSpot(self, spot, newPoints):
-        self.__first.append(newPoints) if spot == 1 \
-            else self.__second.append(newPoints) if spot == 2 \
-            else self.__third.append(newPoints)
+        self.__getExistingPointsFromSpot(spot).append(newPoints)
 
     def __pruneToTopThree(self):
         if len(self.first) > 3:
