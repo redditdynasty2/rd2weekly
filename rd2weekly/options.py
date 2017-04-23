@@ -8,7 +8,7 @@ def parse():
     parser = argparse.ArgumentParser(description="Scrapes the CBS fantasy baseball site for weekly summaries")
     parser.add_argument("-c", "--credentials",
                         nargs=2,
-                        metavar="<username> <password>",
+                        metavar=("<username>", "<password>"),
                         required=True,
                         help="Credentials to use to sign into CBS")
     parser.add_argument("-p", "--period",
