@@ -2,34 +2,22 @@ import re
 
 from bs4 import BeautifulSoup
 
-from src.scoring.bestTrio import BestTrio
+from src.scoring.topPerformers import TopPerformers
+from src.scoring.worstPerformers import WorstPerformers
 
 
-# TODO: finish functionality (scraping, updating player position info, etc.)
-# TODO: consider separating scraping and storing of data
 class TopPerformerParser:
+    # TODO: finish functionality (scraping, updating player position info, etc.)
+    # TODO: consider separating scraping and storing of data
     def __init__(self, scoreboard, browserSession):
         self.__scoreboard = scoreboard
         self.__browserSession = browserSession
-        self.__topPerformers = {
-            "C": BestTrio(),
-            "1B": BestTrio(),
-            "2B": BestTrio(),
-            "3B": BestTrio(),
-            "SS": BestTrio(),
-            "OF": BestTrio(),
-            "CF": BestTrio(),
-            "U": BestTrio(),
-            "1SP": BestTrio(),
-            "2SP": BestTrio(),
-            "RP": BestTrio() }
-        self.__worstPerformers = {
-            "SP": BestTrio(reverse=True),
-            "RP": BestTrio(reverse=True) }
+        self.__topPerformers = TopPerformers()
+        self.__worstPerformers = WorstPerformers()
 
     def parseTopPerformers(self):
-        for position in self.topPerformers.keys():
-            if self.topPerformers[position].first:
+        for position in self.topPerformers.positions():
+            if self.topPerformers.topPerformers[position].first:
                 # already processed
                 continue
             else:
@@ -60,4 +48,3 @@ class TopPerformerParser:
         soup = BeautifulSoup(self.browserSession.getSortedPerformancesByPosition(position), "html.parser")
         playerRows = soup.find_all("tr", class_=re.compile(r"row\d+"))
         return playerRows
-
