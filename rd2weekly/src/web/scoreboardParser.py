@@ -3,17 +3,18 @@ import re
 from bs4 import BeautifulSoup
 
 from src.scoring.player import Player
+from src.scoring.scoreboard import Scoreboard
 from src.scoring.team import Team
 
 
 class ScoreboardParser:
-    def __init__(self, scoreboard, browserSession):
-        self.__scoreboard = scoreboard
+    def __init__(self, browserSession):
+        self.__scoreboard = Scoreboard()
         self.__browserSession = browserSession
 
     @staticmethod
-    def parseScoreboard(scoreboard, browserSession):
-        parser = ScoreboardParser(scoreboard, browserSession)
+    def parseScoreboard(browserSession):
+        parser = ScoreboardParser(browserSession)
         matchupLinks = parser.__parseMatchups()
         [parser.__scrapeMatchup(matchup) for matchup in matchupLinks]
         return parser
@@ -37,9 +38,9 @@ class ScoreboardParser:
         self.__processTeam("home")
 
     def __loadMatchupInBrowser(self, matchupLink):
-        cssSelector = "a[href={0}]".format(matchupLink["href"])
+        selector = "a[href={0}]".format(matchupLink["href"])
         self.browserSession.getScoreboardBase()
-        self.browserSession.find_element_by_css_selector(cssSelector).click()
+        self.browserSession.find_element_by_css_selector(selector).click()
 
     def __processTeam(self, homeOrAway):
         soup = BeautifulSoup(self.browserSession.page_source, "html.parser")
@@ -65,12 +66,13 @@ class ScoreboardParser:
     def __addPlayerToTeam(activePlayerSoup, team, active):
         cbsId, name, positions = ScoreboardParser.__getPlayerInfo(activePlayerSoup)
         points = ScoreboardParser.__getPlayerPoints(activePlayerSoup)
-        team.addPlayer(Player(name, cbsId, positions, points, active))
+        player = Player(name, cbsId, positions, points, active)
+        team.addPlayerToTeam(player)
 
     @staticmethod
     def __getPlayerInfo(soup):
-        tag = soup.find("a.playerLink")
-        cbsId = tag["href"][len("/players/playerpage/"):]
+        tag = soup.find("a", class_="playerLink")
+        cbsId = ScoreboardParser.getPlayerId(tag)
         fullName = " ".join(tag["title"].split(" ")[:-2])
         tempPosition = tag["title"].split(" ")[-2]
         if "F" in tempPosition:
@@ -80,6 +82,10 @@ class ScoreboardParser:
             return cbsId, fullName, [tempPosition]
 
     @staticmethod
+    def getPlayerId(tag):
+        return tag["href"][len("/players/playerpage/"):]
+
+    @staticmethod
     def __getPlayerPoints(soup):
-        tag = soup.find("a.scoreLink")
+        tag = soup.find("a", class_="scoreLink")
         return float(tag.string)

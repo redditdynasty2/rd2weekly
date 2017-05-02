@@ -22,3 +22,10 @@ class TopPerformers:
 
     def positions(self):
         return self.topPerformers.keys()
+
+    def addPlayer(self, player):
+        for position in player.positions:
+            if position == "SP":
+                self.topPerformers["1SP"].addIfTopThree(player)
+            elif position in self.topPerformers.keys():
+                self.topPerformers[position].addIfTopThree(player)

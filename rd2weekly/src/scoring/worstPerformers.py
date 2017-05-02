@@ -13,3 +13,11 @@ class WorstPerformers:
 
     def positions(self):
         return self.worstPerformers.keys()
+
+    def addPlayer(self, player):
+        for position in player.positions:
+            if "SP" in position:
+                self.worstPerformers["SP"].addIfTopThree(player)
+            elif position in self.worstPerformers.keys():
+                self.worstPerformers[position].addIfTopThree(player)
+

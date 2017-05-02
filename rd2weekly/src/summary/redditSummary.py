@@ -5,8 +5,12 @@ class RedditSummary:
         self.__topPerformers = topPerformers
         self.__records = records
 
-    def generateSummary(self):
-        pass
+    @staticmethod
+    def generateSummary(scoreboard, topPerformers, records):
+        summary = RedditSummary(scoreboard, topPerformers, records)
+        print("Scoreboard: " + summary.scoreboard)
+        print("Top Performers: " + summary.topPerformers)
+        print("Records: " + summary.records)
 
     @property
     def scoreboard(self):

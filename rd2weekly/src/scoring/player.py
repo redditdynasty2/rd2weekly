@@ -2,7 +2,7 @@ class Player:
     def __init__(self, name, cbsIdNumber, positions, points, active):
         self.__name = name
         self.__cbsIdNumber = cbsIdNumber
-        self.__positions = positions
+        self.__positions = set(positions)
         self.__points = points
         self.__active = active
 
@@ -26,12 +26,17 @@ class Player:
     def active(self):
         return self.__active
 
-    @positions.setter
-    def positions(self, newPositions):
-        self.__positions = newPositions
+    def merge(self, other):
+        assert self == other and self.points == other.points
+        for position in other.positions:
+            if "P" in position:
+                # we trust the pitcher eligibility passed in with the other player
+                self.__positions = { position }
+            else:
+                self.positions.add(position)
 
     def __eq__(self, other):
-        return self.__cbsIdNumber == other.__cbsId
+        return self.name == other.name and self.cbsIdNumber == other.cbsId
 
     def __lt__(self, other):
         return self.points < other.points and self != other

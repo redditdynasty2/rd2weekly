@@ -41,7 +41,7 @@ class Team:
     def pointMode(self, hittingPitching):
         self.__pointMode = hittingPitching
 
-    def addPlayer(self, newPlayer):
+    def addPlayerToTeam(self, newPlayer):
         if newPlayer not in self.players:
             if "P" in newPlayer.positions:
                 self.points.addPitchingPoints(newPlayer.points)

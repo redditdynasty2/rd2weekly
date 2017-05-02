@@ -1,4 +1,4 @@
-from src.file.jsonFileHandler import JsonFileHandler
+from src.text.jsonFileHandler import JsonFileHandler
 from src.scoring.scoreboard import Scoreboard
 from src.summary.redditSummary import RedditSummary
 from src.web.rd2BrowserSession import RD2BrowserSession
@@ -48,14 +48,14 @@ class RD2Week:
     def browserSession(self):
         return self.__browserSession
 
-    def parseScores(self):
-        ScoreboardParser.parseScoreboard(self.scoreboard, self.browserSession)
+    def scrape(self):
+        self.__scoreboard = ScoreboardParser.parseScoreboard(self.browserSession)
         self.topPerformers.parseTopPerformers()
 
-    def generateSummary(self):
+    def print(self):
         self.leagueJson.writeChangesBack()
         self.recordJson.writeChangesBack()
-        RedditSummary(self.scoreboard, self.topPerformers, self.recordJson).generateSummary()
+        RedditSummary.generateSummary(self.scoreboard, self.topPerformers, self.recordJson)
 
     def close(self):
         self.browserSession.driver.close()
