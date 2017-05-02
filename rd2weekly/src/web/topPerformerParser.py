@@ -15,10 +15,13 @@ class TopPerformerParser:
         self.__topPerformers = TopPerformers()
         self.__worstPerformers = WorstPerformers()
 
-    def parseTopPerformers(self):
-        for position in self.topPerformers.positions():
-            if not self.topPerformers.topPerformers[position].first:
-                self.__parseTopPerformersForPosition(position)
+    @staticmethod
+    def parseTopPerformers(scoreboard, browserSession):
+        parser = TopPerformerParser(scoreboard, browserSession)
+        for position in parser.topPerformers.positions():
+            if not parser.topPerformers.topPerformers[position].first:
+                parser.__parseTopPerformersForPosition(position)
+        return parser
 
     @property
     def scoreboard(self):
@@ -50,15 +53,17 @@ class TopPerformerParser:
 
     @staticmethod
     def __parsePlayerRow(playerSoup, position):
-        name = TopPerformerParser.__parsePlayerName(playerSoup)
-        cbsId = ScoreboardParser.getPlayerId(playerSoup)
+        cbsId, name = TopPerformerParser.__getNameAndId(playerSoup)
         points = TopPerformerParser.__parsePlayerPoints(playerSoup)
         positions = TopPerformerParser.__parsePosition(playerSoup, position)
-        return Player(name, cbsId, points, positions, [])
+        return Player(name, cbsId, positions, points, None)
 
     @staticmethod
-    def __parsePlayerName(playerSoup):
-        return playerSoup.find("a", class_="playerLink").string.strip()
+    def __getNameAndId(playerSoup):
+        tag = playerSoup.find("a", class_="playerLink")
+        name = tag.string.strip()
+        cbsId = ScoreboardParser.getPlayerId(tag)
+        return cbsId, name
 
     @staticmethod
     def __parsePlayerPoints(playerSoup):

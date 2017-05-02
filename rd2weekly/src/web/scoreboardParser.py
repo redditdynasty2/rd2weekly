@@ -17,7 +17,7 @@ class ScoreboardParser:
         parser = ScoreboardParser(browserSession)
         matchupLinks = parser.__parseMatchups()
         [parser.__scrapeMatchup(matchup) for matchup in matchupLinks]
-        return parser
+        return parser.scoreboard
 
     @property
     def scoreboard(self):
@@ -38,12 +38,11 @@ class ScoreboardParser:
         self.__processTeam("home")
 
     def __loadMatchupInBrowser(self, matchupLink):
-        selector = "a[href={0}]".format(matchupLink["href"])
         self.browserSession.getScoreboardBase()
-        self.browserSession.find_element_by_css_selector(selector).click()
+        self.browserSession.clickOnCssElement("a[href='{0}']".format(matchupLink))
 
     def __processTeam(self, homeOrAway):
-        soup = BeautifulSoup(self.browserSession.page_source, "html.parser")
+        soup = BeautifulSoup(self.browserSession.getSource(), "html.parser")
         teamName = soup.find("td", class_="teamname", id="{0}_big_name".format(homeOrAway))
         if teamName not in [team.name for team in self.scoreboard.teams]:
             team = Team(teamName)
@@ -82,8 +81,8 @@ class ScoreboardParser:
             return cbsId, fullName, [tempPosition]
 
     @staticmethod
-    def getPlayerId(tag):
-        return tag["href"][len("/players/playerpage/"):]
+    def getPlayerId(miniSoup):
+        return miniSoup["href"][len("/players/playerpage/"):]
 
     @staticmethod
     def __getPlayerPoints(soup):

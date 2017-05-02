@@ -8,9 +8,9 @@ class RedditSummary:
     @staticmethod
     def generateSummary(scoreboard, topPerformers, records):
         summary = RedditSummary(scoreboard, topPerformers, records)
-        print("Scoreboard: " + summary.scoreboard)
-        print("Top Performers: " + summary.topPerformers)
-        print("Records: " + summary.records)
+        print("Scoreboard: {0}".format(summary.scoreboard))
+        print("Top Performers: {0}".format(summary.topPerformers))
+        print("Records: {0}".format(summary.records))
 
     @property
     def scoreboard(self):

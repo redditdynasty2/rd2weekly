@@ -7,22 +7,22 @@ class TeamPoints(Trio):
 
     @property
     def name(self):
-        return self.__first
+        return self._first
 
     @property
     def hittingPoints(self):
-        return self.__second
+        return self._second
 
     @property
     def pitchingPoints(self):
-        return self.__third
+        return self._third
 
     @property
     def totalPoints(self):
         return self.hittingPoints + self.pitchingPoints
 
     def addHittingPoints(self, newHittingPoints):
-        self.__second+=newHittingPoints
+        self._second+=newHittingPoints
 
     def addPitchingPoints(self, newPitchingPoints):
-        self.__second+=newPitchingPoints
+        self._second+=newPitchingPoints

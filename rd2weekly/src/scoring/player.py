@@ -36,7 +36,10 @@ class Player:
                 self.positions.add(position)
 
     def __eq__(self, other):
-        return self.name == other.name and self.cbsIdNumber == other.cbsId
+        return self.name == other.name and self.cbsIdNumber == other.cbsIdNumber
 
     def __lt__(self, other):
         return self.points < other.points and self != other
+
+    def __hash__(self) -> int:
+        return hash("{0}-{1}".format(self.name, self.cbsIdNumber))

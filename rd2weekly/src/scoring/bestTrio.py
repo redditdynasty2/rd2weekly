@@ -8,18 +8,19 @@ class BestTrio(Trio):
 
     @property
     def first(self):
-        return self.__first
+        return self._first
 
     @property
     def second(self):
-        return self.__second
+        return self._second
 
     @property
     def third(self):
-        return self.__third
+        return self._third
 
     def addIfTopThree(self, newPoints):
-        if not newPoints in { self.first, self.second, self.third }:
+        allPlayerInTopThree = self.first.union(self.second.union(self.third))
+        if newPoints not in allPlayerInTopThree:
             spot = 1
             while spot <= 3:
                 if self.__jumpSpotIfAllowed(spot, newPoints):

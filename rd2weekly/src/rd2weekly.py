@@ -1,3 +1,4 @@
+from src.scoring.topPerformers import TopPerformers
 from src.text.jsonFileHandler import JsonFileHandler
 from src.scoring.scoreboard import Scoreboard
 from src.summary.redditSummary import RedditSummary
@@ -19,14 +20,9 @@ class RD2Week:
         self.__leagueJson = JsonFileHandler(leagueFile)
         self.__recordJson = JsonFileHandler(recordFile)
         self.__browserSession = RD2BrowserSession(week, self.__leagueJson.originalJson["league_url"], credentials)
-        self.__scoreboard = Scoreboard()
-        self.__topPerformers = TopPerformerParser(self.__scoreboard, self.__browserSession)
-
-    def __enter__(self, week, leagueFile, recordFile, credentials):
-        return RD2Week(week, leagueFile, recordFile, credentials)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+        self.__scoreboard = None
+        self.__topPerformers = None
+        self.__worstPerformers = None
 
     @property
     def leagueJson(self):
@@ -37,6 +33,10 @@ class RD2Week:
         return self.__recordJson
 
     @property
+    def browserSession(self):
+        return self.__browserSession
+
+    @property
     def scoreboard(self):
         return self.__scoreboard
 
@@ -45,17 +45,17 @@ class RD2Week:
         return self.__topPerformers
 
     @property
-    def browserSession(self):
-        return self.__browserSession
+    def worstPerformers(self):
+        return self.__worstPerformers
 
     def scrape(self):
-        self.__scoreboard = ScoreboardParser.parseScoreboard(self.browserSession)
-        self.topPerformers.parseTopPerformers()
+        with self.browserSession as driver:
+            self.__scoreboard = ScoreboardParser.parseScoreboard(driver)
+            performances = TopPerformerParser.parseTopPerformers(self.scoreboard, driver)
+            self.__topPerformers = performances.topPerformers
+            self.__worstPerformers = performances.worstPerformers
 
     def print(self):
         self.leagueJson.writeChangesBack()
         self.recordJson.writeChangesBack()
         RedditSummary.generateSummary(self.scoreboard, self.topPerformers, self.recordJson)
-
-    def close(self):
-        self.browserSession.driver.close()

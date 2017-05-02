@@ -7,15 +7,15 @@ class WinLossTie(Trio):
 
     @property
     def wins(self):
-        return self.__first
+        return self._first
 
     @property
     def losses(self):
-        return self.__second
+        return self._second
 
     @property
     def ties(self):
-        return self.__third
+        return self._third
 
     def addWin(self, otherTeamName):
         self.wins.append(otherTeamName)

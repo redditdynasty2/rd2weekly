@@ -10,24 +10,23 @@ class JsonFileHandler(Trio):
 
     @staticmethod
     def __parseJsonFromFile(filename):
-        with open(filename, "r+") as jsonFile:
-            return json.load(jsonFile)
+        return json.load(filename)
 
     @property
     def filename(self):
-        return self.__first
+        return self._first
 
     @property
     def originalJson(self):
-        return self.__second
+        return self._second
 
     @property
     def activeJson(self):
-        return self.__third
+        return self._third
 
     @activeJson.setter
     def activeJson(self, newJson):
-        self.__third = newJson
+        self._third = newJson
 
     def writeChangesBack(self):
         if self.originalJson != self.activeJson:
