@@ -24,3 +24,5 @@ class WorstPerformers:
             elif position in self.worstPerformers.keys():
                 self.worstPerformers[position].addIfTopThree(player)
 
+    def __repr__(self) -> str:
+        return "WorstPerformers[{0}]".format(self.worstPerformers)

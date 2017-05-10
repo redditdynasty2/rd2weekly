@@ -108,6 +108,5 @@ class TopPerformerParser:
 
     def __processNewPlayerInfo(self, player: Player) -> None:
         updatedPlayer = self.scoreboard.updatePlayer(player)
-        if updatedPlayer:
-            self.topPerformers.addPlayer(updatedPlayer)
-            self.worstPerformers.addPlayer(updatedPlayer)
+        self.topPerformers.addPlayer(updatedPlayer)
+        self.worstPerformers.addPlayer(updatedPlayer)

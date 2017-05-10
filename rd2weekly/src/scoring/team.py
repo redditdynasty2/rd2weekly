@@ -18,7 +18,7 @@ class Team:
         return self.__name
 
     @property
-    def points(self) -> Union[int, TeamPoints]:
+    def points(self) -> Union[float, TeamPoints]:
         if self.pointMode == "total":
             return self.__points.totalPoints
         elif self.pointMode == "hitting":
@@ -41,15 +41,17 @@ class Team:
         return self.__pointMode
 
     @pointMode.setter
-    def pointMode(self, hittingPitching: str) -> None:
-        self.__pointMode = hittingPitching
+    def pointMode(self, hittingPitchingTotal: str) -> None:
+        self.__pointMode = hittingPitchingTotal
 
     def addPlayerToTeam(self, newPlayer: Player) -> None:
         if newPlayer not in self.players:
-            if "P" in newPlayer.positions:
-                self.points.addPitchingPoints(newPlayer.points)
-            else:
-                self.points.addHittingPoints(newPlayer.points)
+            self.players.append(newPlayer)
+            if newPlayer.active:
+                if newPlayer.isPitcher():
+                    self.points.addPitchingPoints(newPlayer.points)
+                else:
+                    self.points.addHittingPoints(newPlayer.points)
 
     def __eq__(self, other: "Team") -> bool:
         return self.name == other.name
@@ -59,3 +61,14 @@ class Team:
 
     def __hash__(self) -> int:
         return hash(self.name)
+
+    def __repr__(self) -> str:
+        self.__pointMode = None
+        builder = "name={0}".format(self.name)
+        builder += ","
+        builder += "points={0}".format(self.points)
+        builder += ","
+        builder += "winLossTie={0}".format(self.winLossTie)
+        builder += ","
+        builder += "players={0}".format(self.players)
+        return "Team[{0}]".format(builder)

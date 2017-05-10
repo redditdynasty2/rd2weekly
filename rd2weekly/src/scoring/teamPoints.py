@@ -25,4 +25,14 @@ class TeamPoints(Trio):
         self._second += newHittingPoints
 
     def addPitchingPoints(self, newPitchingPoints: float) -> None:
-        self._second += newPitchingPoints
+        self._third += newPitchingPoints
+
+    def __repr__(self) -> str:
+        builder = "name={0}".format(self.name)
+        builder += ","
+        builder += "hittingPoints={0}".format(self.hittingPoints)
+        builder += ","
+        builder += "pitchingPoints={0}".format(self.pitchingPoints)
+        builder += ","
+        builder += "totalPoints={0}".format(self.totalPoints)
+        return "TeamPoints[{0}]".format(builder)

@@ -80,3 +80,10 @@ class Scoreboard:
                 if existing == player:
                     existing.merge(player)
                     return existing
+        return player
+
+    def __repr__(self) -> str:
+        for team in self.teams:
+            print(team)
+        return ""
+

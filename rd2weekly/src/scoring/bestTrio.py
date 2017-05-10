@@ -80,3 +80,13 @@ class BestTrio(Trio):
             self.__second = set()
         if len(self.first) + len(self.second) > 3:
             self.__third = set()
+
+    def __repr__(self) -> str:
+        builder = "first={0}".format(self.first)
+        builder += ","
+        builder += "second={0}".format(self.second)
+        builder += ","
+        builder += "third={0}".format(self.third)
+        builder += ","
+        builder += "reverse={0}".format(self.__reverse)
+        return "BestTrio[{0}]".format(builder)

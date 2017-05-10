@@ -29,16 +29,25 @@ class Player:
     def active(self) -> bool:
         return self.__active
 
+    def isPitcher(self) -> bool:
+        for position in self.positions:
+            if "P" in position:
+                return True
+        return False
+
     def merge(self, other: "Player") -> None:
-        assert self == other and self.points == other.points
+        assert self == other, "Can't only merge players with the same name and id"
         for position in other.positions:
             if "P" in position:
                 # we trust the pitcher eligibility passed in with the other player
                 self.__positions = { position }
-            elif position:
+                break
+            else:
                 self.positions.add(position)
+        if self.points != other.points:
+            self.__points = other.points
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         builder = "name={0}".format(self.name)
         builder += ","
         builder += "cbsIdNumber={0}".format(self.cbsIdNumber)

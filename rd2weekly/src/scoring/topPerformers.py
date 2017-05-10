@@ -34,3 +34,6 @@ class TopPerformers:
                 self.topPerformers[position].addIfTopThree(player)
             else:
                 self.topPerformers["U"].addIfTopThree(player)
+
+    def __repr__(self):
+        return "TopPerformers[{0}]".format(self.topPerformers)

@@ -47,12 +47,9 @@ class ScoreboardParser:
         soup = BeautifulSoup(self.browserSession.getSource(), "html.parser")
         teamName = soup.find("td", class_="teamname", id="{0}_big_name".format(homeOrAway)).string.strip()
         if teamName not in [team.name for team in self.scoreboard.teams]:
-            print("Team {0} getting added".format(teamName))
             team = Team(teamName)
             ScoreboardParser.__createNewTeam(team, soup, homeOrAway)
             self.scoreboard.teams.append(team)
-        else:
-            print("Team {0} already taken care of".format(teamName))
 
     @staticmethod
     def __createNewTeam(team: Team, soup: BeautifulSoup, homeOrAway: str) -> None:
@@ -71,7 +68,6 @@ class ScoreboardParser:
         cbsId, name, positions = ScoreboardParser.__getPlayerInfo(activePlayerSoup)
         points = ScoreboardParser.__getPlayerPoints(activePlayerSoup)
         player = Player(name, cbsId, positions, points, active)
-        print("Adding player {0} to team {1}".format(team.name, name))
         team.addPlayerToTeam(player)
 
     @staticmethod

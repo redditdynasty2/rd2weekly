@@ -27,3 +27,11 @@ class WinLossTie(Trio):
 
     def addTie(self, otherTeamName: str) -> None:
         self.ties.append(otherTeamName)
+
+    def __repr__(self) -> str:
+        builder = "wins={0}".format(self.wins)
+        builder += ","
+        builder += "losses={0}".format(self.losses)
+        builder += ","
+        builder += "ties={0}".format(self.ties)
+        return "WinLossTie[{0}]".format(builder)
