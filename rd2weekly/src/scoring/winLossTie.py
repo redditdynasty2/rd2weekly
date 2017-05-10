@@ -1,3 +1,5 @@
+from typing import List
+
 from src.scoring.trio import Trio
 
 
@@ -6,22 +8,22 @@ class WinLossTie(Trio):
         super(WinLossTie, self).__init__(first=[], second=[], third=[])
 
     @property
-    def wins(self):
+    def wins(self) -> List[str]:
         return self._first
 
     @property
-    def losses(self):
+    def losses(self) -> List[str]:
         return self._second
 
     @property
-    def ties(self):
+    def ties(self) -> List[str]:
         return self._third
 
-    def addWin(self, otherTeamName):
+    def addWin(self, otherTeamName: str) -> None:
         self.wins.append(otherTeamName)
 
-    def addLoss(self, otherTeamName):
+    def addLoss(self, otherTeamName: str) -> None:
         self.losses.append(otherTeamName)
 
-    def addTie(self, otherTeamName):
+    def addTie(self, otherTeamName: str) -> None:
         self.ties.append(otherTeamName)

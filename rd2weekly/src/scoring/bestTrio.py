@@ -1,3 +1,7 @@
+from typing import Union, Set
+
+from src.scoring.player import Player
+from src.scoring.team import Team
 from src.scoring.trio import Trio
 
 
@@ -7,18 +11,18 @@ class BestTrio(Trio):
         self.__reverse = reverse
 
     @property
-    def first(self):
+    def first(self) -> Set[Union[Player, Team]]:
         return self._first
 
     @property
-    def second(self):
+    def second(self) -> Set[Union[Player, Team]]:
         return self._second
 
     @property
-    def third(self):
+    def third(self) -> Set[Union[Player, Team]]:
         return self._third
 
-    def addIfTopThree(self, newPoints):
+    def addIfTopThree(self, newPoints: Union[Player, Team]) -> bool:
         allPlayerInTopThree = self.first.union(self.second.union(self.third))
         if newPoints not in allPlayerInTopThree:
             spot = 1
@@ -28,7 +32,7 @@ class BestTrio(Trio):
                     return True
         return False
 
-    def __jumpSpotIfAllowed(self, spot, newPoints):
+    def __jumpSpotIfAllowed(self, spot: int, newPoints: Union[Player, Team]) -> bool:
         comparison = self.__pointComparison(spot, newPoints.points)
         if comparison > 0:
             return self.__jumpSpot(spot, newPoints)
@@ -36,7 +40,7 @@ class BestTrio(Trio):
             return self.__addToSpot(spot, newPoints)
 
 
-    def __pointComparison(self, spot, newPoints):
+    def __pointComparison(self, spot: int, newPoints: Union[Player, Team]) -> int:
         existingPoints = self.__getExistingPointsFromSpot(spot)
         if existingPoints:
             ourPoints = next(iter(existingPoints))
@@ -45,7 +49,7 @@ class BestTrio(Trio):
         else:
             return 1
 
-    def __getExistingPointsFromSpot(self, spot):
+    def __getExistingPointsFromSpot(self, spot: int) -> set:
         if spot == 1:
             return self.first
         elif spot == 2:
@@ -53,7 +57,7 @@ class BestTrio(Trio):
         else:
             return self.third
 
-    def __jumpSpot(self, spot, newPoints):
+    def __jumpSpot(self, spot: int, newPoints: Union[Player, Team]) -> bool:
         i = 3
         while i >= spot:
             if i == 3:
@@ -67,11 +71,11 @@ class BestTrio(Trio):
             i-=1
         return True
 
-    def __addToSpot(self, spot, newPoints):
+    def __addToSpot(self, spot: int, newPoints: Union[Player, Team]) -> bool:
         self.__getExistingPointsFromSpot(spot).add(newPoints)
         return True
 
-    def __pruneToTopThree(self):
+    def __pruneToTopThree(self) -> None:
         if len(self.first) > 3:
             self.__second = set()
         if len(self.first) + len(self.second) > 3:

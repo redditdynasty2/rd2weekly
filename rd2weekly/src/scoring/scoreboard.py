@@ -1,4 +1,8 @@
+from typing import List
+
 from src.scoring.bestTrio import BestTrio
+from src.scoring.player import Player
+from src.scoring.team import Team
 
 
 class Scoreboard:
@@ -12,26 +16,26 @@ class Scoreboard:
         self.__worstThreePitching = BestTrio(reverse=True)
 
     @property
-    def teams(self):
+    def teams(self) -> List[Team]:
         return self.__teams
 
     @property
-    def topThreeTotal(self):
+    def topThreeTotal(self) -> BestTrio:
         if not self.__topThreeTotal.first:
             self.__setTeamPointsMode("total")
             [self.__topThreeTotal.addIfTopThree(team) for team in self.teams]
             self.__resetTeamPointsMode()
         return self.__topThreeTotal
 
-    def __setTeamPointsMode(self, mode):
+    def __setTeamPointsMode(self, mode) -> None:
         for team in self.teams:
             team.pointMode = mode
 
-    def __resetTeamPointsMode(self):
+    def __resetTeamPointsMode(self) -> None:
         self.__setTeamPointsMode(None)
 
     @property
-    def worstThreeTotal(self):
+    def worstThreeTotal(self) -> BestTrio:
         if not self.__worstThreeTotal.first:
             self.__setTeamPointsMode("total")
             [self.__worstThreeTotal.addIfTopThree(team) for team in self.teams]
@@ -39,7 +43,7 @@ class Scoreboard:
         return self.__worstThreeTotal
 
     @property
-    def topThreeHitting(self):
+    def topThreeHitting(self) -> BestTrio:
         if not self.__topThreeHitting.first:
             self.__setTeamPointsMode("hitting")
             [self.__topThreeHitting.addIfTopThree(team) for team in self.teams]
@@ -47,7 +51,7 @@ class Scoreboard:
         return self.__topThreeHitting
 
     @property
-    def worstThreeHitting(self):
+    def worstThreeHitting(self) -> BestTrio:
         if not self.__worstThreeHitting.first:
             self.__setTeamPointsMode("hitting")
             [self.__worstThreeHitting.addIfTopThree(team) for team in self.teams]
@@ -55,7 +59,7 @@ class Scoreboard:
         return self.__worstThreeHitting
 
     @property
-    def topThreePitching(self):
+    def topThreePitching(self) -> BestTrio:
         if not self.__topThreePitching.first:
             self.__setTeamPointsMode("pitching")
             [self.__topThreePitching.addIfTopThree(team) for team in self.teams]
@@ -63,15 +67,16 @@ class Scoreboard:
         return self.__topThreePitching
 
     @property
-    def worstThreePitching(self):
+    def worstThreePitching(self) -> BestTrio:
         if not self.__worstThreePitching.first:
             self.__setTeamPointsMode("pitching")
             [self.__worstThreePitching.addIfTopThree(team) for team in self.teams]
             self.__resetTeamPointsMode()
         return self.__worstThreePitching
 
-    def updatePlayer(self, player):
-        for existing in [team for team in self.teams]:
-            if existing == player:
-                existing.merge(player)
-                continue
+    def updatePlayer(self, player: Player) -> Player:
+        for team in self.teams:
+            for existing in team.players:
+                if existing == player:
+                    existing.merge(player)
+                    return existing

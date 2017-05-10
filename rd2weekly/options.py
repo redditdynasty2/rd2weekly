@@ -1,9 +1,10 @@
 import argparse
+from argparse import Namespace
 
 import version
 
 
-def parse():
+def parse() -> Namespace:
     parser = argparse.ArgumentParser(description="Scrapes the CBS fantasy baseball site for weekly summaries")
     parser.add_argument("-c", "--credentials",
                         nargs=2,

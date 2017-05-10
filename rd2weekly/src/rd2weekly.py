@@ -1,4 +1,7 @@
+from typing import List
+
 from src.scoring.topPerformers import TopPerformers
+from src.scoring.worstPerformers import WorstPerformers
 from src.text.jsonFileHandler import JsonFileHandler
 from src.scoring.scoreboard import Scoreboard
 from src.summary.redditSummary import RedditSummary
@@ -16,7 +19,7 @@ __status__ = "Pre-alpha"
 
 
 class RD2Week:
-    def __init__(self, week, leagueFile, recordFile, credentials):
+    def __init__(self, week: int, leagueFile: str, recordFile: str, credentials: List[str]):
         self.__leagueJson = JsonFileHandler(leagueFile)
         self.__recordJson = JsonFileHandler(recordFile)
         self.__browserSession = RD2BrowserSession(week, self.__leagueJson.originalJson["league_url"], credentials)
@@ -25,37 +28,38 @@ class RD2Week:
         self.__worstPerformers = None
 
     @property
-    def leagueJson(self):
+    def leagueJson(self) -> JsonFileHandler:
         return self.__leagueJson
 
     @property
-    def recordJson(self):
+    def recordJson(self) -> JsonFileHandler:
         return self.__recordJson
 
     @property
-    def browserSession(self):
+    def browserSession(self) -> RD2BrowserSession:
         return self.__browserSession
 
     @property
-    def scoreboard(self):
+    def scoreboard(self) -> Scoreboard:
         return self.__scoreboard
 
     @property
-    def topPerformers(self):
+    def topPerformers(self) -> TopPerformers:
         return self.__topPerformers
 
     @property
-    def worstPerformers(self):
+    def worstPerformers(self) -> WorstPerformers:
         return self.__worstPerformers
 
-    def scrape(self):
+    def scrape(self) -> None:
         with self.browserSession as driver:
-            self.__scoreboard = ScoreboardParser.parseScoreboard(driver)
-            performances = TopPerformerParser.parseTopPerformers(self.scoreboard, driver)
+            initialScoreboard = ScoreboardParser.parseScoreboard(driver)
+            performances = TopPerformerParser.parseTopPerformers(initialScoreboard, driver)
+            self.__scoreboard = performances.scoreboard
             self.__topPerformers = performances.topPerformers
             self.__worstPerformers = performances.worstPerformers
 
-    def print(self):
+    def print(self) -> None:
         self.leagueJson.writeChangesBack()
         self.recordJson.writeChangesBack()
-        RedditSummary.generateSummary(self.scoreboard, self.topPerformers, self.recordJson)
+        RedditSummary.generateSummary(self.scoreboard, self.topPerformers, self.worstPerformers, self.recordJson)

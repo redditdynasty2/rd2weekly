@@ -1,4 +1,5 @@
 import json
+from typing import Dict
 
 from src.scoring.trio import Trio
 
@@ -9,11 +10,11 @@ class JsonFileHandler(Trio):
         super(JsonFileHandler, self).__init__(first=filename, second=jsonData, third=jsonData)
 
     @staticmethod
-    def __parseJsonFromFile(filename):
+    def __parseJsonFromFile(filename: str):
         return json.load(filename)
 
     @property
-    def filename(self):
+    def filename(self) -> str:
         return self._first
 
     @property
@@ -25,10 +26,10 @@ class JsonFileHandler(Trio):
         return self._third
 
     @activeJson.setter
-    def activeJson(self, newJson):
+    def activeJson(self, newJson) -> None:
         self._third = newJson
 
-    def writeChangesBack(self):
+    def writeChangesBack(self) -> None:
         if self.originalJson != self.activeJson:
             with open(self.filename, "w") as jsonFile:
                 json.dump(self.activeJson, jsonFile)

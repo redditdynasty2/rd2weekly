@@ -6,23 +6,23 @@ class TeamPoints(Trio):
         super(TeamPoints, self).__init__(first=name, second=0, third=0)
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._first
 
     @property
-    def hittingPoints(self):
+    def hittingPoints(self) -> float:
         return self._second
 
     @property
-    def pitchingPoints(self):
+    def pitchingPoints(self) -> float:
         return self._third
 
     @property
-    def totalPoints(self):
+    def totalPoints(self) -> float:
         return self.hittingPoints + self.pitchingPoints
 
-    def addHittingPoints(self, newHittingPoints):
-        self._second+=newHittingPoints
+    def addHittingPoints(self, newHittingPoints: float) -> None:
+        self._second += newHittingPoints
 
-    def addPitchingPoints(self, newPitchingPoints):
-        self._second+=newPitchingPoints
+    def addPitchingPoints(self, newPitchingPoints: float) -> None:
+        self._second += newPitchingPoints

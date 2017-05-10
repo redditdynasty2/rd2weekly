@@ -1,4 +1,7 @@
+from typing import Dict, KeysView
+
 from src.scoring.bestTrio import BestTrio
+from src.scoring.player import Player
 
 
 class TopPerformers:
@@ -17,15 +20,17 @@ class TopPerformers:
             "RP": BestTrio() }
 
     @property
-    def topPerformers(self):
+    def topPerformers(self) -> Dict[str, BestTrio]:
         return self.__topPerformers
 
-    def positions(self):
+    def positions(self) -> KeysView[str]:
         return self.topPerformers.keys()
 
-    def addPlayer(self, player):
+    def addPlayer(self, player: Player) -> None:
         for position in player.positions:
             if position == "SP":
                 self.topPerformers["1SP"].addIfTopThree(player)
             elif position in self.topPerformers.keys():
                 self.topPerformers[position].addIfTopThree(player)
+            else:
+                self.topPerformers["U"].addIfTopThree(player)
