@@ -39,13 +39,11 @@ class Player:
         assert self == other, "Can't only merge players with the same name and id"
         for position in other.positions:
             if "P" in position:
-                # we trust the pitcher eligibility passed in with the other player
+                # we trust the pitcher eligibility from the other player
                 self.__positions = { position }
                 break
             else:
                 self.positions.add(position)
-        if self.points != other.points:
-            self.__points = other.points
 
     def __repr__(self) -> str:
         builder = "name={0}".format(self.name)
@@ -60,7 +58,7 @@ class Player:
         return "Player[{0}]".format(builder)
 
     def __eq__(self, other: "Player") -> bool:
-        return self.name == other.name and self.cbsIdNumber == other.cbsIdNumber
+        return self.cbsIdNumber == other.cbsIdNumber
 
     def __lt__(self, other: "Player") -> bool:
         return self.points < other.points and self != other

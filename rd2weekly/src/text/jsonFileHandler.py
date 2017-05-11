@@ -18,15 +18,15 @@ class JsonFileHandler(Trio):
         return self._first
 
     @property
-    def originalJson(self):
+    def originalJson(self) -> Dict[str, object]:
         return self._second
 
     @property
-    def activeJson(self):
+    def activeJson(self) -> Dict[str, object]:
         return self._third
 
     @activeJson.setter
-    def activeJson(self, newJson) -> None:
+    def activeJson(self, newJson: Dict[str, object]) -> None:
         self._third = newJson
 
     def writeChangesBack(self) -> None:

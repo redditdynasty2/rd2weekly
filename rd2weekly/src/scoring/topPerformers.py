@@ -1,4 +1,4 @@
-from typing import Dict, KeysView
+from typing import Dict, List
 
 from src.scoring.bestTrio import BestTrio
 from src.scoring.player import Player
@@ -23,8 +23,8 @@ class TopPerformers:
     def topPerformers(self) -> Dict[str, BestTrio]:
         return self.__topPerformers
 
-    def positions(self) -> KeysView[str]:
-        return self.topPerformers.keys()
+    def positions(self) -> List[str]:
+        return list(self.topPerformers.keys())
 
     def addPlayer(self, player: Player) -> None:
         for position in player.positions:

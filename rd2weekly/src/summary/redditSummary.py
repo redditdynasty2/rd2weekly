@@ -18,7 +18,7 @@ class RedditSummary:
                         worstPerformers: WorstPerformers,
                         records: JsonFileHandler) -> None:
         summary = RedditSummary(scoreboard, topPerformers, worstPerformers, records)
-        print(summary.scoreboard)
+        print(summary.topPerformers)
 
     @property
     def scoreboard(self) -> Scoreboard:

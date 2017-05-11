@@ -22,8 +22,7 @@ class TopPerformerParser:
     def parseTopPerformers(scoreboard: Scoreboard, browserSession: RD2BrowserSession) -> "TopPerformerParser":
         parser = TopPerformerParser(scoreboard, browserSession)
         for position in parser.topPerformers.positions():
-            if not parser.topPerformers.topPerformers[position].first:
-                parser.__parseTopPerformersForPosition(position)
+            parser.__parseTopPerformersForPosition(position)
         return parser
 
     @property
@@ -70,8 +69,8 @@ class TopPerformerParser:
 
     @staticmethod
     def __parsePlayerPoints(playerSoup: BeautifulSoup) -> float:
-        pointString = playerSoup.find("td", class_="bold", string=re.compile(r"\d+\.\d+")).string.strip()
         try:
+            pointString = playerSoup.find("td", class_="bold", string=re.compile(r"\d+\.\d+")).string.strip()
             return float(pointString)
         except ValueError:
             return 0

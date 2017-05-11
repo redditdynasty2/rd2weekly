@@ -84,8 +84,8 @@ class ScoreboardParser:
 
     @staticmethod
     def getPlayerId(miniSoup: BeautifulSoup) -> int:
-        idString = miniSoup["href"][len("/players/playerpage/"):]
         try:
+            idString = miniSoup["href"][len("/players/playerpage/"):]
             return int(idString)
         except ValueError:
             return 0
