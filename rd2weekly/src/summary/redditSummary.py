@@ -64,10 +64,8 @@ class RedditSummary:
         return "\n\n".join(trios)
 
     def __getAllStars(self) -> str:
-        allStarPositions = ["C", "1B", "2B", "3B", "SS", "OF", "CF", "U"]
-        return AllStarSummary.getAllStarString(self.topPerformers, allStarPositions)
+        return AllStarSummary.getAllStarString(self.topPerformers)
 
-    #TODO: get working, shouldn't be hard, mostly done with trioSummary
     def __getPitcherPerformances(self) -> str:
         trios = []
         trios.append(TrioSummary.getTrioString(TOP_TWO_START_PITCHER_HEADER, self.topPerformers.topPerformers["2SP"]))
@@ -79,4 +77,5 @@ class RedditSummary:
 
     #TODO: get this working
     def __getMatchupSummary(self):
-        pass
+        lines = []
+        return "\n\n".join(lines)

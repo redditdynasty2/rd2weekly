@@ -3,6 +3,7 @@ from typing import List, Tuple
 
 from bs4 import BeautifulSoup
 
+from src.scoring.matchup import Matchup
 from src.scoring.player import Player
 from src.scoring.scoreboard import Scoreboard
 from src.scoring.team import Team
@@ -36,20 +37,23 @@ class ScoreboardParser:
 
     def __scrapeMatchup(self, matchupLink: str) -> None:
         self.__loadMatchupInBrowser(matchupLink)
-        self.__processTeam("away")
-        self.__processTeam("home")
+        team1 = self.__processTeam("away")
+        team2 = self.__processTeam("home")
+        self.__processMatchup(team1, team2)
 
     def __loadMatchupInBrowser(self, matchupLink: str) -> None:
         self.browserSession.getScoreboardBase()
         self.browserSession.clickOnCssElement("a[href='{0}']".format(matchupLink))
 
-    def __processTeam(self, homeOrAway: str) -> None:
+    def __processTeam(self, homeOrAway: str) -> Team:
         soup = BeautifulSoup(self.browserSession.getSource(), "html.parser")
         teamName = soup.find("td", class_="teamname", id="{0}_big_name".format(homeOrAway)).string.strip()
-        if teamName not in [team.name for team in self.scoreboard.teams]:
+        team = self.scoreboard.getTeam(teamName)
+        if not team:
             team = Team(teamName)
             ScoreboardParser.__createNewTeam(team, soup, homeOrAway)
-            self.scoreboard.teams.append(team)
+            self.scoreboard.teams.add(team)
+        return team
 
     @staticmethod
     def __createNewTeam(team: Team, soup: BeautifulSoup, homeOrAway: str) -> None:
@@ -84,13 +88,14 @@ class ScoreboardParser:
 
     @staticmethod
     def getPlayerId(miniSoup: BeautifulSoup) -> int:
-        try:
-            idString = miniSoup["href"][len("/players/playerpage/"):]
-            return int(idString)
-        except ValueError:
-            return 0
+        idString = miniSoup["href"][len("/players/playerpage/"):]
+        return int(idString)
 
     @staticmethod
     def __getPlayerPoints(soup: BeautifulSoup) -> float:
         tag = soup.find("a", class_="scoreLink")
         return float(tag.string)
+
+    def __processMatchup(self, team1: Team, team2: Team) -> None:
+        matchup = Matchup(team1, team2)
+        self.scoreboard.matchups.add(matchup)

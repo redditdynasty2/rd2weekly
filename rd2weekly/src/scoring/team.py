@@ -57,13 +57,13 @@ class Team:
         return self.name == other.name
 
     def __lt__(self, other: "Team") -> bool:
-        return self.points < other.points and self != other
+        return self != other and self.points < other.points
 
     def __hash__(self) -> int:
         return hash(self.name)
 
     def __repr__(self) -> str:
-        self.__pointMode = None
+        self.pointMode = None
         builder = "name={0}".format(self.name)
         builder += ","
         builder += "points={0}".format(self.points)

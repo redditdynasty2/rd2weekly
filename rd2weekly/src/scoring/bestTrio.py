@@ -3,12 +3,14 @@ from typing import Union, Set
 from src.scoring.player import Player
 from src.scoring.team import Team
 from src.scoring.trio import Trio
+
 PointScorer = Union[Player, Team]
 
+
 class BestTrio(Trio):
-    def __init__(self, reverse: bool = False):
+    def __init__(self, sortAscending: bool):
         super(BestTrio, self).__init__(first=set(), second=set(), third=set())
-        self.__reverse = reverse
+        self.__isAscending = sortAscending
 
     @property
     def first(self) -> Set[PointScorer]:
@@ -22,46 +24,52 @@ class BestTrio(Trio):
     def third(self) -> Set[PointScorer]:
         return self._third
 
-    def addIfTopThree(self, newPoints: PointScorer) -> bool:
-        allPlayerInTopThree = self.first.union(self.second.union(self.third))
-        if newPoints not in allPlayerInTopThree:
-            spot = 0
-            while spot < 3:
-                spot += 1
-                if self.__jumpSpotIfAllowed(spot, newPoints):
-                    self.__pruneToTopThree()
-                    return True
-        return False
+    @property
+    def isAscending(self) -> bool:
+        return self.__isAscending
 
-    def __jumpSpotIfAllowed(self, spot: int, newPoints: PointScorer) -> bool:
-        comparison = self.__pointComparison(spot, newPoints)
-        if comparison > 0:
-            self.__jumpSpot(spot, newPoints)
-        elif comparison == 0:
-            self.__addToSpot(spot, newPoints)
-        return comparison >= 0
+    def getRank(self, pointScorer: PointScorer) -> int:
+        for rank in range(1, 4):
+            if self.__pointComparison(rank, pointScorer) >= 0:
+                return rank
+        else:
+            return 4
 
-
-    def __pointComparison(self, spot: int, newPoints: PointScorer) -> int:
-        existingPoints = self.__getExistingPointsFromSpot(spot)
-        if existingPoints:
-            ourPoints = next(iter(existingPoints))
-            multiplier = -1 if self.__reverse else 1
-            return multiplier * ((newPoints > ourPoints) - (newPoints < ourPoints))
+    def __pointComparison(self, rank: int, newPoints: PointScorer) -> int:
+        existingAtRank = self.__getExistingRank(rank)
+        if existingAtRank:
+            existingPoints = next(iter(existingAtRank))
+            multiplier = -1 if self.isAscending else 1
+            return multiplier * ((newPoints > existingPoints) - (newPoints < existingPoints))
         else:
             return 1
 
-    def __getExistingPointsFromSpot(self, spot: int) -> Set[PointScorer]:
-        if spot == 1:
+    def __getExistingRank(self, rank: int) -> Set[PointScorer]:
+        if rank == 1:
             return self.first
-        elif spot == 2:
+        elif rank == 2:
             return self.second
         else:
             return self.third
 
-    def __jumpSpot(self, spot: int, newPoints: PointScorer) -> None:
+    def addScorer(self, newPoints: PointScorer) -> int:
+        rank = self.getRank(newPoints)
+        if rank != 4:
+            self.__jumpOrJoinRank(rank, newPoints)
+        return rank
+
+    def __jumpOrJoinRank(self, rank: int, newPoints: PointScorer) -> bool:
+        comparison = self.__pointComparison(rank, newPoints)
+        if comparison > 0:
+            self.__jumpRank(rank, newPoints)
+        elif comparison == 0:
+            self.__addToRank(rank, newPoints)
+        else:
+            raise ValueError("Point scorer '{0}' cannot jump rank {1}".format(newPoints, rank))
+
+    def __jumpRank(self, rank: int, newPoints: PointScorer) -> None:
         i = 3
-        while i >= spot:
+        while i >= rank:
             if i == 3:
                 self._third = { newPoints }
             elif i == 2:
@@ -72,8 +80,8 @@ class BestTrio(Trio):
                 self._first = { newPoints }
             i-=1
 
-    def __addToSpot(self, spot: int, newPoints: PointScorer) -> None:
-        self.__getExistingPointsFromSpot(spot).add(newPoints)
+    def __addToRank(self, rank: int, newPoints: PointScorer) -> None:
+        self.__getExistingRank(rank).add(newPoints)
 
     def __pruneToTopThree(self) -> None:
         if len(self.first) > 2:
@@ -88,5 +96,5 @@ class BestTrio(Trio):
         builder += ","
         builder += "third={0}".format(self.third)
         builder += ","
-        builder += "reverse={0}".format(self.__reverse)
+        builder += "isAscending={0}".format(self.isAscending)
         return "BestTrio[{0}]".format(builder)
