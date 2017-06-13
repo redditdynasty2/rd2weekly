@@ -1,5 +1,4 @@
 import json
-from typing import Dict
 
 from src.scoring.trio import Trio
 
@@ -18,15 +17,15 @@ class JsonFileHandler(Trio):
         return self._first
 
     @property
-    def originalJson(self) -> Dict[str, object]:
+    def originalJson(self) -> dict:
         return self._second
 
     @property
-    def activeJson(self) -> Dict[str, object]:
+    def activeJson(self) -> dict:
         return self._third
 
     @activeJson.setter
-    def activeJson(self, newJson: Dict[str, object]) -> None:
+    def activeJson(self, newJson: dict) -> None:
         self._third = newJson
 
     def writeChangesBack(self) -> None:

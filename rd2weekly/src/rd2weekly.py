@@ -22,7 +22,7 @@ class RD2Week:
     def __init__(self, week: int, leagueFile: str, recordFile: str, credentials: List[str]):
         self.__leagueJson = JsonFileHandler(leagueFile)
         self.__recordJson = JsonFileHandler(recordFile)
-        self.__browserSession = RD2BrowserSession(week, self.__leagueJson.originalJson["league_url"], credentials)
+        self.__browserSession = RD2BrowserSession(week, self.leagueJson.originalJson["league_url"], credentials)
         self.__scoreboard = None
         self.__topPerformers = None
         self.__worstPerformers = None

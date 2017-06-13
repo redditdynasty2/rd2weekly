@@ -27,7 +27,8 @@ class AllStarSummary:
     #TODO: incorporate records and previous weeks here
     #TODO: write out if player was not active
     @staticmethod
-    def getAllStarString(topPerformers: TopPerformers, positions: List[str]) -> str:
+    def getAllStarString(topPerformers: TopPerformers) -> str:
+        positions = TopPerformers.getAllStarPositions()
         summary = AllStarSummary(topPerformers, positions)
         return summary.__getAllStarSummary()
 
