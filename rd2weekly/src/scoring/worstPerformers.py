@@ -7,8 +7,8 @@ from src.scoring.player import Player
 class WorstPerformers:
     def __init__(self):
         self.__worstPerformers = {
-            "SP": BestTrio(reverse=True),
-            "RP": BestTrio(reverse=True) }
+            "SP": BestTrio(True),
+            "RP": BestTrio(True) }
 
     @property
     def worstPerformers(self) -> Dict[str, BestTrio]:
@@ -20,9 +20,9 @@ class WorstPerformers:
     def addPlayer(self, player: Player) -> None:
         for position in player.positions:
             if "SP" in position:
-                self.worstPerformers["SP"].addIfTopThree(player)
+                self.worstPerformers["SP"].addScorer(player)
             elif position in self.worstPerformers.keys():
-                self.worstPerformers[position].addIfTopThree(player)
+                self.worstPerformers[position].addScorer(player)
 
     def __repr__(self) -> str:
         return "WorstPerformers[{0}]".format(self.worstPerformers)
