@@ -1,31 +1,39 @@
-from typing import List
+from typing import Set, Union
 
 from src.scoring.bestTrio import BestTrio
+from src.scoring.matchup import Matchup
 from src.scoring.player import Player
 from src.scoring.team import Team
 
 
 class Scoreboard:
     def __init__(self):
-        self.__teams = []
-        self.__topThreeTotal = BestTrio()
-        self.__worstThreeTotal = BestTrio(reverse=True)
-        self.__topThreeHitting = BestTrio()
-        self.__worstThreeHitting = BestTrio(reverse=True)
-        self.__topThreePitching = BestTrio()
-        self.__worstThreePitching = BestTrio(reverse=True)
+        self.__teams = set()
+        self.__matchups = set()
 
     @property
-    def teams(self) -> List[Team]:
+    def teams(self) -> Set[Team]:
         return self.__teams
 
     @property
+    def matchups(self) -> Set[Matchup]:
+        return self.__matchups
+
+    def getTeam(self, teamName: str) -> Union[Team, None]:
+        for team in self.teams:
+            if team.name == teamName:
+                return team
+        return None
+
     def topThreeTotal(self) -> BestTrio:
-        if not self.__topThreeTotal.first:
-            self.__setTeamPointsMode("total")
-            [self.__topThreeTotal.addIfTopThree(team) for team in self.teams]
-            self.__resetTeamPointsMode()
-        return self.__topThreeTotal
+        return self.__getTopThreeTeams("total", False)
+
+    def __getTopThreeTeams(self, pointMode: str, reverse: bool) -> BestTrio:
+        trio = BestTrio(reverse)
+        self.__setTeamPointsMode(pointMode)
+        [trio.addScorer(team) for team in self.teams]
+        self.__resetTeamPointsMode()
+        return trio
 
     def __setTeamPointsMode(self, mode) -> None:
         for team in self.teams:
@@ -34,45 +42,20 @@ class Scoreboard:
     def __resetTeamPointsMode(self) -> None:
         self.__setTeamPointsMode(None)
 
-    @property
     def worstThreeTotal(self) -> BestTrio:
-        if not self.__worstThreeTotal.first:
-            self.__setTeamPointsMode("total")
-            [self.__worstThreeTotal.addIfTopThree(team) for team in self.teams]
-            self.__resetTeamPointsMode()
-        return self.__worstThreeTotal
+        return self.__getTopThreeTeams("total", True)
 
-    @property
     def topThreeHitting(self) -> BestTrio:
-        if not self.__topThreeHitting.first:
-            self.__setTeamPointsMode("hitting")
-            [self.__topThreeHitting.addIfTopThree(team) for team in self.teams]
-            self.__resetTeamPointsMode()
-        return self.__topThreeHitting
+        return self.__getTopThreeTeams("hitting", False)
 
-    @property
     def worstThreeHitting(self) -> BestTrio:
-        if not self.__worstThreeHitting.first:
-            self.__setTeamPointsMode("hitting")
-            [self.__worstThreeHitting.addIfTopThree(team) for team in self.teams]
-            self.__resetTeamPointsMode()
-        return self.__worstThreeHitting
+        return self.__getTopThreeTeams("hitting", True)
 
-    @property
     def topThreePitching(self) -> BestTrio:
-        if not self.__topThreePitching.first:
-            self.__setTeamPointsMode("pitching")
-            [self.__topThreePitching.addIfTopThree(team) for team in self.teams]
-            self.__resetTeamPointsMode()
-        return self.__topThreePitching
+        return self.__getTopThreeTeams("pitching", False)
 
-    @property
     def worstThreePitching(self) -> BestTrio:
-        if not self.__worstThreePitching.first:
-            self.__setTeamPointsMode("pitching")
-            [self.__worstThreePitching.addIfTopThree(team) for team in self.teams]
-            self.__resetTeamPointsMode()
-        return self.__worstThreePitching
+        return self.__getTopThreeTeams("pitching", True)
 
     def updatePlayer(self, player: Player) -> Player:
         for team in self.teams:
@@ -83,7 +66,7 @@ class Scoreboard:
         return player
 
     def __repr__(self) -> str:
-        for team in self.teams:
-            print(team)
-        return ""
-
+        builder = "teams={0}".format(self.teams)
+        builder += ","
+        builder += "matchups={0}".format(self.matchups)
+        return "Scoreboard[{0}]".format(builder)
