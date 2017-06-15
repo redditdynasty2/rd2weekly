@@ -1,5 +1,4 @@
-from itertools import chain
-from typing import Union, List, Set
+from typing import Union, Set
 
 from src.scoring.bestTrio import BestTrio
 from src.scoring.player import Player
@@ -20,7 +19,7 @@ class TrioSummary:
 
     @property
     def category(self) -> str:
-        return self.category
+        return self.__category
 
     #TODO: pull info from record books and previous weeks (that'll be tricky)
     @staticmethod

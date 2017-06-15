@@ -52,33 +52,38 @@ class BestTrio(Trio):
         else:
             return self.third
 
-    def addScorer(self, newPoints: PointScorer) -> int:
+    def addScorer(self, newPoints: PointScorer) -> Set[PointScorer]:
+        """returns scorers that were displaced, if any"""
         rank = self.getRank(newPoints)
         if rank != 4:
-            self.__jumpOrJoinRank(rank, newPoints)
-        return rank
+            return self.__jumpOrJoinRank(rank, newPoints)
+        return set()
 
-    def __jumpOrJoinRank(self, rank: int, newPoints: PointScorer) -> bool:
+    def __jumpOrJoinRank(self, rank: int, newPoints: PointScorer) -> Set[PointScorer]:
         comparison = self.__pointComparison(rank, newPoints)
         if comparison > 0:
-            self.__jumpRank(rank, newPoints)
+            return self.__jumpRank(rank, newPoints)
         elif comparison == 0:
             self.__addToRank(rank, newPoints)
+            return set()
         else:
             raise ValueError("Point scorer '{0}' cannot jump rank {1}".format(newPoints, rank))
 
-    def __jumpRank(self, rank: int, newPoints: PointScorer) -> None:
+    def __jumpRank(self, rank: int, newPoints: PointScorer) -> Set[PointScorer]:
+        """returns scorers that were displaced"""
         i = 3
+        retval = self.third
         while i >= rank:
             if i == 3:
                 self._third = { newPoints }
             elif i == 2:
-                self._third = self.second.copy()
+                self._third = self.second
                 self._second = { newPoints }
             else:
-                self._second = self.first.copy()
+                self._second = self.first
                 self._first = { newPoints }
             i-=1
+        return retval
 
     def __addToRank(self, rank: int, newPoints: PointScorer) -> None:
         self.__getExistingRank(rank).add(newPoints)

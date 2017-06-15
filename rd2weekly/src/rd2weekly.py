@@ -62,4 +62,4 @@ class RD2Week:
     def print(self) -> None:
         self.leagueJson.writeChangesBack()
         self.recordJson.writeChangesBack()
-        RedditSummary.generateSummary(self.scoreboard, self.topPerformers, self.worstPerformers, self.recordJson)
+        print(RedditSummary.generateSummary(self.scoreboard, self.topPerformers, self.worstPerformers, self.recordJson))

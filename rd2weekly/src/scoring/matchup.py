@@ -25,7 +25,7 @@ class Matchup:
         return self != other and self.pointDifference() < other.pointDifference()
 
     def __hash__(self) -> int:
-        return hash({ self.team1, self.team2 })
+        return hash(str(self))
 
     def __repr__(self) -> str:
         builder = "team1={0}".format(self.team1)
