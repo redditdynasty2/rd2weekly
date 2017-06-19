@@ -58,13 +58,14 @@ class RedditSummary:
         return self.__records
 
     def __getTeamPerformances(self) -> str:
-        trios = []
-        trios.append(TrioSummary.getTrioString(TOP_THREE_TEAMS_HEADER, self.scoreboard.topThreeTotal()))
-        trios.append(TrioSummary.getTrioString(WORST_THREE_TEAMS_HEADER, self.scoreboard.worstThreeTotal()))
-        trios.append(TrioSummary.getTrioString(TOP_THREE_OFFENSES_HEADER, self.scoreboard.topThreeHitting()))
-        trios.append(TrioSummary.getTrioString(WORST_THREE_OFFENSES_HEADER, self.scoreboard.worstThreeHitting()))
-        trios.append(TrioSummary.getTrioString(TOP_THREE_PITCHING_HEADER, self.scoreboard.topThreePitching()))
-        trios.append(TrioSummary.getTrioString(WORST_THREE_PITCHING_HEADER, self.scoreboard.worstThreePitching()))
+        trios = [
+                TrioSummary.getTrioString(TOP_THREE_TEAMS_HEADER, self.scoreboard.topThreeTotal()),
+                TrioSummary.getTrioString(WORST_THREE_TEAMS_HEADER, self.scoreboard.worstThreeTotal()),
+                TrioSummary.getTrioString(TOP_THREE_OFFENSES_HEADER, self.scoreboard.topThreeHitting()),
+                TrioSummary.getTrioString(WORST_THREE_OFFENSES_HEADER, self.scoreboard.worstThreeHitting()),
+                TrioSummary.getTrioString(TOP_THREE_PITCHING_HEADER, self.scoreboard.topThreePitching()),
+                TrioSummary.getTrioString(WORST_THREE_PITCHING_HEADER, self.scoreboard.worstThreePitching())
+        ]
         return "\n\n".join(trios)
 
     def __getAllStars(self) -> str:

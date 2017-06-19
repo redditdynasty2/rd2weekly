@@ -58,7 +58,7 @@ class TopPerformerParser:
         cbsId, name = TopPerformerParser.__getNameAndId(playerSoup)
         points = TopPerformerParser.__parsePlayerPoints(playerSoup)
         positions = TopPerformerParser.__parsePosition(playerSoup, position)
-        return Player(name, cbsId, positions, points, None)
+        return Player(name, cbsId, "", positions, points, True)
 
     @staticmethod
     def __getNameAndId(playerSoup: BeautifulSoup) -> Tuple[int, str]:
