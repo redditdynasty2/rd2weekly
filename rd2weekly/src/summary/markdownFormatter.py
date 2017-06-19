@@ -10,7 +10,10 @@ def getHeaderString(category):
     return " * **{0}**".format(category)
 
 def getSingleScorerString(scorer: PointScorer, bulletFormat: str) -> str:
-    return "  {0} {1}, {2}".format(bulletFormat, scorer.name, scorer.points)
+    if type(scorer) is Player:
+        return "  {0} {1}, {2}, {3}".format(bulletFormat, scorer.name, scorer.team, scorer.points)
+    else:
+        return "  {0} {1}, {2}".format(bulletFormat, scorer.name, scorer.points)
 
 def getTiedScorerString(scorer: PointScorer, bulletFormat: str, rank: int) -> str:
     base = getSingleScorerString(scorer, bulletFormat)

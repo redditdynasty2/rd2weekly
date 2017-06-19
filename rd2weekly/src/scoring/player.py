@@ -2,9 +2,10 @@ from typing import Set, List
 
 
 class Player:
-    def __init__(self, name: str, cbsIdNumber: int, positions: List[str], points: float, active: bool):
+    def __init__(self, name: str, cbsIdNumber: int, team: str, positions: List[str], points: float, active: bool):
         self.__name = name
         self.__cbsIdNumber = cbsIdNumber
+        self.__team = team
         self.__positions = set(positions)
         self.__points = points
         self.__active = active
@@ -16,6 +17,10 @@ class Player:
     @property
     def cbsIdNumber(self) -> int:
         return self.__cbsIdNumber
+
+    @property
+    def team(self) -> str:
+        return self.__team
 
     @property
     def positions(self) -> Set[str]:
@@ -49,6 +54,8 @@ class Player:
         builder = "name={0}".format(self.name)
         builder += ","
         builder += "cbsIdNumber={0}".format(self.cbsIdNumber)
+        builder += ","
+        builder += "team={0}".format(self.team)
         builder += ","
         builder += "positions={0}".format(self.positions)
         builder += ","

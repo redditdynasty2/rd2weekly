@@ -71,7 +71,7 @@ class ScoreboardParser:
     def __addPlayerToTeam(team: Team, activePlayerSoup: BeautifulSoup, active: bool) -> None:
         cbsId, name, positions = ScoreboardParser.__getPlayerInfo(activePlayerSoup)
         points = ScoreboardParser.__getPlayerPoints(activePlayerSoup)
-        player = Player(name, cbsId, positions, points, active)
+        player = Player(name, cbsId, team.name, positions, points, active)
         team.addPlayerToTeam(player)
 
     @staticmethod
