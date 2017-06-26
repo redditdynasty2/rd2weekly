@@ -66,6 +66,7 @@ class RedditSummary:
                 TrioSummary.getTrioString(TOP_THREE_PITCHING_HEADER, self.scoreboard.topThreePitching()),
                 TrioSummary.getTrioString(WORST_THREE_PITCHING_HEADER, self.scoreboard.worstThreePitching())
         ]
+        self.scoreboard.resetTeamPointsMode()
         return "\n\n".join(trios)
 
     def __getAllStars(self) -> str:
