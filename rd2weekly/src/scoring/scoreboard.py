@@ -32,15 +32,11 @@ class Scoreboard:
         trio = BestTrio(reverse)
         self.__setTeamPointsMode(pointMode)
         [trio.addScorer(team) for team in self.teams]
-        self.__resetTeamPointsMode()
         return trio
 
     def __setTeamPointsMode(self, mode) -> None:
         for team in self.teams:
             team.pointMode = mode
-
-    def __resetTeamPointsMode(self) -> None:
-        self.__setTeamPointsMode(None)
 
     def worstThreeTotal(self) -> BestTrio:
         return self.__getTopThreeTeams("total", True)
@@ -56,6 +52,9 @@ class Scoreboard:
 
     def worstThreePitching(self) -> BestTrio:
         return self.__getTopThreeTeams("pitching", True)
+
+    def resetTeamPointsMode(self) -> None:
+        self.__setTeamPointsMode(None)
 
     def updatePlayer(self, player: Player) -> Player:
         for team in self.teams:
