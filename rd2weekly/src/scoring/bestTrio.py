@@ -83,10 +83,12 @@ class BestTrio(Trio):
                 self._second = self.first
                 self._first = { newPoints }
             i-=1
+        self.__pruneToTopThree()
         return retval
 
     def __addToRank(self, rank: int, newPoints: PointScorer) -> None:
         self.__getExistingRank(rank).add(newPoints)
+        self.__pruneToTopThree()
 
     def __pruneToTopThree(self) -> None:
         if len(self.first) > 2:

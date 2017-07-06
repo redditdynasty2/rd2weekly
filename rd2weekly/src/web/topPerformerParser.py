@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 
 from src.scoring.player import Player
 from src.scoring.scoreboard import Scoreboard
+from src.scoring.team import Team
 from src.scoring.topPerformers import TopPerformers
 from src.scoring.worstPerformers import WorstPerformers
 from src.web.rd2BrowserSession import RD2BrowserSession
@@ -21,8 +22,10 @@ class TopPerformerParser:
     @staticmethod
     def parseTopPerformers(scoreboard: Scoreboard, browserSession: RD2BrowserSession) -> "TopPerformerParser":
         parser = TopPerformerParser(scoreboard, browserSession)
+        updatedPlayers = set()
         for position in parser.topPerformers.positions():
-            parser.__parseTopPerformersForPosition(position)
+            [updatedPlayers.add(player) for player in parser.__parseTopPerformersForPosition(position)]
+        [parser.__processUpdatedPlayerInfo(player) for player in updatedPlayers]
         return parser
 
     @property
@@ -41,12 +44,10 @@ class TopPerformerParser:
     def worstPerformers(self) -> WorstPerformers:
         return self.__worstPerformers
 
-    def __parseTopPerformersForPosition(self, position: str) -> None:
+    def __parseTopPerformersForPosition(self, position: str) -> List[Player]:
         if "P" in position:
             position = "SP:RP"
-        playerRows = self.__getSortedPerformancesForPosition(position)
-        for player in playerRows:
-            self.__processNewPlayerInfo(player)
+        return [self.scoreboard.updatePlayer(player) for player in self.__getSortedPerformancesForPosition(position)]
 
     def __getSortedPerformancesForPosition(self, position: str) -> List[Player]:
         soup = BeautifulSoup(self.browserSession.getSortedPerformancesByPosition(position), "html.parser")
@@ -58,7 +59,7 @@ class TopPerformerParser:
         cbsId, name = TopPerformerParser.__getNameAndId(playerSoup)
         points = TopPerformerParser.__parsePlayerPoints(playerSoup)
         positions = TopPerformerParser.__parsePosition(playerSoup, position)
-        return Player(name, cbsId, "", positions, points, True)
+        return Player(name, cbsId, Team.defaultTeam(), positions, points, True)
 
     @staticmethod
     def __getNameAndId(playerSoup: BeautifulSoup) -> Tuple[int, str]:
@@ -105,7 +106,6 @@ class TopPerformerParser:
         except ValueError:
             return ["RP"]
 
-    def __processNewPlayerInfo(self, player: Player) -> None:
-        updatedPlayer = self.scoreboard.updatePlayer(player)
+    def __processUpdatedPlayerInfo(self, updatedPlayer: Player) -> None:
         self.topPerformers.addPlayer(updatedPlayer)
         self.worstPerformers.addPlayer(updatedPlayer)

@@ -13,6 +13,10 @@ class Team:
         self.__players = []
         self.__pointMode = None
 
+    @staticmethod
+    def defaultTeam() -> str:
+        return "FA"
+
     @property
     def name(self) -> str:
         return self.__name
