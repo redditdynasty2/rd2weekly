@@ -20,6 +20,7 @@ class ScoreboardParser:
         parser = ScoreboardParser(browserSession)
         matchupLinks = parser.__parseMatchups()
         [parser.__scrapeMatchup(matchup) for matchup in matchupLinks]
+        parser.scoreboard.syncTeamsWithMatchups()
         return parser.scoreboard
 
     @property
@@ -98,4 +99,17 @@ class ScoreboardParser:
 
     def __processMatchup(self, team1: Team, team2: Team) -> None:
         matchup = Matchup(team1, team2)
+        if matchup.pointDifference() == 0:
+            result1 = result2 = "tie"
+        else:
+            result1 = "win"
+            result2 = "loss"
+        for team in self.scoreboard.teams:
+            if team == matchup.team1:
+                team.winLossTie.addResult(result1, matchup.team2.name)
+                matchup.team1.winLossTie.addResult(result1, matchup.team2.name)
+            if team == matchup.team2:
+                team.winLossTie.addResult(result2, matchup.team1.name)
+                matchup.team2.winLossTie.addResult(result2, matchup.team1.name)
         self.scoreboard.matchups.add(matchup)
+

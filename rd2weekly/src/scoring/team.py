@@ -57,6 +57,11 @@ class Team:
                 else:
                     self.points.addHittingPoints(newPlayer.points)
 
+    def updateFromOther(self, other: "Team") -> None:
+        assert self == other
+        self.__points = other.points
+        self.__winLossTie = other.winLossTie
+
     def __eq__(self, other: "Team") -> bool:
         return self.name == other.name
 

@@ -37,5 +37,5 @@ class AllStarSummary:
         lines.append(markdownFormatter.getHeaderString("All-Stars"))
         for position in positions:
             scorer = next(iter(self.allStars.getPerformersForPosition(position).first))
-            lines.append(markdownFormatter.getSingleScorerString(scorer, "\{0})".format(position)))
+            lines.append(markdownFormatter.getBulletedScorerString(scorer, "\{0})".format(position)))
         return lines

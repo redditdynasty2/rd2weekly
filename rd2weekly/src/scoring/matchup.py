@@ -15,15 +15,15 @@ class Matchup:
             self.__team2 = sortedTeam2
 
     @property
-    def team1(self):
+    def team1(self) -> Team:
         return self.__team1
 
     @property
-    def team2(self):
+    def team2(self) -> Team:
         return self.__team2
 
-    def pointDifference(self):
-        return self.team1.points - self.team2.points
+    def pointDifference(self) -> float:
+        return self.team1.points.totalPoints - self.team2.points.totalPoints
 
     def __eq__(self, other: "Matchup") -> bool:
         return self.team1 == other.team1 and self.team2 == other.team2

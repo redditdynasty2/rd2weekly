@@ -8,6 +8,20 @@ from src.summary import markdownFormatter
 PointScorer = Union[Player, Team]
 
 
+TOP_THREE_TEAMS_HEADER = "Top Three Teams of the Week"
+WORST_THREE_TEAMS_HEADER = "Not Top Three Teams of the Week"
+TOP_THREE_OFFENSES_HEADER = "Offensive Powerhouses"
+WORST_THREE_OFFENSES_HEADER = "Weaklings"
+TOP_THREE_PITCHING_HEADER = "Pitching Factories"
+WORST_THREE_PITCHING_HEADER = "Burnt-down Factories"
+
+TOP_TWO_START_PITCHER_HEADER = "2 Start Saviors"
+TOP_ONE_START_PITCHER_HEADER = "1 Start Gods"
+WORST_STARTING_PITCHER_HEADER = "Had a Bad Day"
+TOP_RELIEF_PITCHER_HEADER = "No Start Workhorses"
+WORST_RELIEF_PITCHER_HEADER = "The Bullpen Disasters"
+
+
 class TrioSummary:
     def __init__(self, category: str, trio: BestTrio):
         self.__category = category
@@ -36,6 +50,6 @@ class TrioSummary:
     @staticmethod
     def __getRankedScorerLines(rankedScorers: Set[PointScorer], rank: int):
         if len(rankedScorers) == 1:
-            return [markdownFormatter.getSingleScorerString(scorer, "*") for scorer in rankedScorers]
+            return [markdownFormatter.getBulletedScorerString(scorer, "*") for scorer in rankedScorers]
         else:
             return [markdownFormatter.getTiedScorerString(scorer, "*", rank) for scorer in rankedScorers]

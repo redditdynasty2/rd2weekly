@@ -1,22 +1,11 @@
 from src.scoring.scoreboard import Scoreboard
 from src.scoring.topPerformers import TopPerformers
 from src.scoring.worstPerformers import WorstPerformers
+from src.summary import trioSummary, matchupSummary
 from src.summary.allStarSummary import AllStarSummary
+from src.summary.matchupSummary import MatchupSummary
 from src.summary.trioSummary import TrioSummary
 from src.text.jsonFileHandler import JsonFileHandler
-
-TOP_THREE_TEAMS_HEADER = "Top Three Teams of the Week"
-WORST_THREE_TEAMS_HEADER = "Not Top Three Teams of the Week"
-TOP_THREE_OFFENSES_HEADER = "Offensive Powerhouses"
-WORST_THREE_OFFENSES_HEADER = "Weaklings"
-TOP_THREE_PITCHING_HEADER = "Pitching Factories"
-WORST_THREE_PITCHING_HEADER = "Burnt-down Factories"
-
-TOP_TWO_START_PITCHER_HEADER = "2 Start Saviors"
-TOP_ONE_START_PITCHER_HEADER = "1 Start Gods"
-WORST_STARTING_PITCHER_HEADER = "Had a Bad Day"
-TOP_RELIEF_PITCHER_HEADER = "No Start Workhorses"
-WORST_RELIEF_PITCHER_HEADER = "The Bullpen Disasters"
 
 
 class RedditSummary:
@@ -39,7 +28,8 @@ class RedditSummary:
         teamTrios = summary.__getTeamPerformances()
         allStars = summary.__getAllStars()
         pitcherTrios = summary.__getPitcherPerformances()
-        return "\n\n".join([teamTrios, allStars, pitcherTrios])
+        matchups = summary.__getMatchupSummary()
+        return "\n\n".join([teamTrios, allStars, pitcherTrios, matchups])
 
     @property
     def scoreboard(self) -> Scoreboard:
@@ -59,12 +49,12 @@ class RedditSummary:
 
     def __getTeamPerformances(self) -> str:
         trios = [
-                TrioSummary.getTrioString(TOP_THREE_TEAMS_HEADER, self.scoreboard.topThreeTotal()),
-                TrioSummary.getTrioString(WORST_THREE_TEAMS_HEADER, self.scoreboard.worstThreeTotal()),
-                TrioSummary.getTrioString(TOP_THREE_OFFENSES_HEADER, self.scoreboard.topThreeHitting()),
-                TrioSummary.getTrioString(WORST_THREE_OFFENSES_HEADER, self.scoreboard.worstThreeHitting()),
-                TrioSummary.getTrioString(TOP_THREE_PITCHING_HEADER, self.scoreboard.topThreePitching()),
-                TrioSummary.getTrioString(WORST_THREE_PITCHING_HEADER, self.scoreboard.worstThreePitching())
+                TrioSummary.getTrioString(trioSummary.TOP_THREE_TEAMS_HEADER, self.scoreboard.topThreeTotal()),
+                TrioSummary.getTrioString(trioSummary.WORST_THREE_TEAMS_HEADER, self.scoreboard.worstThreeTotal()),
+                TrioSummary.getTrioString(trioSummary.TOP_THREE_OFFENSES_HEADER, self.scoreboard.topThreeHitting()),
+                TrioSummary.getTrioString(trioSummary.WORST_THREE_OFFENSES_HEADER, self.scoreboard.worstThreeHitting()),
+                TrioSummary.getTrioString(trioSummary.TOP_THREE_PITCHING_HEADER, self.scoreboard.topThreePitching()),
+                TrioSummary.getTrioString(trioSummary.WORST_THREE_PITCHING_HEADER, self.scoreboard.worstThreePitching())
         ]
         self.scoreboard.resetTeamPointsMode()
         return "\n\n".join(trios)
@@ -74,15 +64,23 @@ class RedditSummary:
 
     def __getPitcherPerformances(self) -> str:
         trios = [
-                TrioSummary.getTrioString(TOP_TWO_START_PITCHER_HEADER, self.topPerformers.getPerformersForPosition("2SP")),
-                TrioSummary.getTrioString(TOP_ONE_START_PITCHER_HEADER, self.topPerformers.getPerformersForPosition("1SP")),
-                TrioSummary.getTrioString(TOP_RELIEF_PITCHER_HEADER, self.topPerformers.getPerformersForPosition("RP")),
-                TrioSummary.getTrioString(WORST_STARTING_PITCHER_HEADER, self.worstPerformers.getPerformersForPosition("SP")),
-                TrioSummary.getTrioString(WORST_RELIEF_PITCHER_HEADER, self.worstPerformers.getPerformersForPosition("RP"))
+                TrioSummary.getTrioString(trioSummary.TOP_TWO_START_PITCHER_HEADER, self.topPerformers.getPerformersForPosition("2SP")),
+                TrioSummary.getTrioString(trioSummary.TOP_ONE_START_PITCHER_HEADER, self.topPerformers.getPerformersForPosition("1SP")),
+                TrioSummary.getTrioString(trioSummary.TOP_RELIEF_PITCHER_HEADER, self.topPerformers.getPerformersForPosition("RP")),
+                TrioSummary.getTrioString(trioSummary.WORST_STARTING_PITCHER_HEADER, self.worstPerformers.getPerformersForPosition("SP")),
+                TrioSummary.getTrioString(trioSummary.WORST_RELIEF_PITCHER_HEADER, self.worstPerformers.getPerformersForPosition("RP"))
         ]
         return "\n\n".join(trios)
 
     #TODO: get this working
     def __getMatchupSummary(self):
-        lines = []
+        summary = MatchupSummary(self.scoreboard.matchups)
+        lines = [
+            summary.getMatchupString(matchupSummary.CLOSEST_MATCHUP),
+            summary.getMatchupString(matchupSummary.BIGGEST_BLOWOUT),
+            summary.getMatchupString(matchupSummary.STRONGEST_ONE_LOSS),
+            summary.getMatchupString(matchupSummary.STRONGEST_TWO_LOSSES),
+            summary.getMatchupString(matchupSummary.WEAKEST_ONE_WIN),
+            summary.getMatchupString(matchupSummary.WEAKEST_TWO_WINS)
+        ]
         return "\n\n".join(lines)

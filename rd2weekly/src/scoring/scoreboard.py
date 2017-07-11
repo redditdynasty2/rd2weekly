@@ -64,6 +64,16 @@ class Scoreboard:
                     return existing
         return player
 
+    def syncTeamsWithMatchups(self) -> None:
+        for matchup in self.matchups:
+            assert matchup.team1 in self.teams
+            assert matchup.team2 in self.teams
+            for team in self.teams:
+                 if team == matchup.team1:
+                     matchup.team1.updateFromOther(team)
+                 if team == matchup.team2:
+                     matchup.team2.updateFromOther(team)
+
     def __repr__(self) -> str:
         builder = "teams={0}".format(self.teams)
         builder += ","
