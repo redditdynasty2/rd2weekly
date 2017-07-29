@@ -87,7 +87,7 @@ class TopPerformerParser:
     def __parsePositionPlayerPosition(playerSoup: BeautifulSoup, position: str) -> List[str]:
         positionSoup = playerSoup.find("span", class_="playerPositionAndTeam")
         positionMatch = re.search(r"^\s*(\w+)\s+\|", positionSoup.string.strip())
-        if positionMatch:
+        if positionMatch and positionMatch.group(1) in TopPerformers.getAllStarPositions():
             return [position, positionMatch.group(1)]
         else:
             return [position]
