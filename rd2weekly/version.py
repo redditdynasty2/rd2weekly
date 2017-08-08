@@ -1,3 +1,1 @@
-from src import rd2weekly
-
-__version__ = rd2weekly.__version__
+__version__ = "0.0.1a1"

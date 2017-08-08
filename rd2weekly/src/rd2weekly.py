@@ -9,14 +9,6 @@ from src.web.rd2BrowserSession import RD2BrowserSession
 from src.web.scoreboardParser import ScoreboardParser
 from src.web.topPerformerParser import TopPerformerParser
 
-__author__ = "Simon Swanson"
-__copyright__ = "Copyright 2016, Simon Swanson"
-__license__ = "MIT"
-__version__ = "pre-alpha"
-__maintainer__ = "Simon Swanson"
-__email__ = "nomiswanson@gmail.com"
-__status__ = "Pre-alpha"
-
 
 class RD2Week:
     def __init__(self, week: int, leagueFile: str, recordFile: str, credentials: List[str]):

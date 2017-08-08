@@ -1,7 +1,7 @@
 import argparse
 from argparse import Namespace
 
-import version
+from version import __version__
 
 
 def parse() -> Namespace:
@@ -17,7 +17,7 @@ def parse() -> Namespace:
                         help="Scoring period to examine. Default is the current scoring session. Currently must be a completed scoring period")
     parser.add_argument("-v", "--version",
                         action="version",
-                        version="%(prog)s: {0}".format(version.__version__),
+                        version="%(prog)s: {0}".format(__version__),
                         help="Print tool's version and exit")
 
     leagueConfigGroup = parser.add_argument_group("League Configuration")
