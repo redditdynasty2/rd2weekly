@@ -65,14 +65,26 @@ class Scoreboard:
         return player
 
     def syncTeamsWithMatchups(self) -> None:
-        for matchup in self.matchups:
-            assert matchup.team1 in self.teams
-            assert matchup.team2 in self.teams
-            for team in self.teams:
-                 if team == matchup.team1:
-                     matchup.team1.updateFromOther(team)
-                 if team == matchup.team2:
-                     matchup.team2.updateFromOther(team)
+        [self.__syncMatchup(matchup) for matchup in self.matchups]
+
+    def __syncMatchup(self, matchup: Matchup) -> None:
+        self.__assertTeamIsValid(matchup.team1)
+        if matchup.team2.name in Team.invalidOpponents():
+            # we're dealing with a bye or a team that's been eliminated so it'll have no opponent
+            return
+        else:
+            self.__assertTeamIsValid(matchup.team2)
+            self.__applyMatchupToTeams(matchup)
+
+    def __assertTeamIsValid(self, team: Team) -> None:
+        assert team in self.teams, "{0} is not a recognized team".format(team)
+
+    def __applyMatchupToTeams(self, matchup: Matchup) -> None:
+        for team in self.teams:
+            if team == matchup.team1:
+                matchup.team1.updateFromOther(team)
+            if team == matchup.team2:
+                matchup.team2.updateFromOther(team)
 
     def __repr__(self) -> str:
         builder = "teams={0}".format(self.teams)

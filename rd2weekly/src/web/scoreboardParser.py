@@ -33,8 +33,12 @@ class ScoreboardParser:
 
     def __parseMatchups(self) -> List[str]:
         soup = BeautifulSoup(self.browserSession.getScoreboardBase(), "html.parser")
-        matchups = soup.find_all("table", id=re.compile(r"^matchup_hilite_\d+$"))
-        return [matchup.find("a", href=re.compile(r"javascript:Atl.swap\(\d+\)"))["href"] for matchup in matchups]
+        parsedMatchups = []
+        for matchup in soup.find_all("table", id=re.compile(r"^matchup_hilite_\d+$")):
+            matchupSoup = matchup.find("a", href=re.compile(r"javascript:Atl.swap\(\d+\)"))
+            if matchupSoup:
+                parsedMatchups.append(matchupSoup["href"])
+        return parsedMatchups
 
     def __scrapeMatchup(self, matchupLink: str) -> None:
         self.__loadMatchupInBrowser(matchupLink)
@@ -50,7 +54,9 @@ class ScoreboardParser:
         soup = BeautifulSoup(self.browserSession.getSource(), "html.parser")
         teamName = soup.find("td", class_="teamname", id="{0}_big_name".format(homeOrAway)).string.strip()
         team = self.scoreboard.getTeam(teamName)
-        if not team:
+        if teamName in Team.invalidOpponents():
+            return Team(teamName)
+        elif not team:
             team = Team(teamName)
             ScoreboardParser.__createNewTeam(team, soup, homeOrAway)
             self.scoreboard.teams.add(team)
@@ -112,4 +118,3 @@ class ScoreboardParser:
                 team.winLossTie.addResult(result2, matchup.team1.name)
                 matchup.team2.winLossTie.addResult(result2, matchup.team1.name)
         self.scoreboard.matchups.add(matchup)
-

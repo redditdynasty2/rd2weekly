@@ -17,6 +17,10 @@ class Team:
     def defaultTeam() -> str:
         return "FA"
 
+    @staticmethod
+    def invalidOpponents() -> List[str]:
+        return ["TBA", "BYE", Team.defaultTeam()]
+
     @property
     def name(self) -> str:
         return self.__name
@@ -49,13 +53,13 @@ class Team:
         self.__pointMode = hittingPitchingTotal
 
     def addPlayerToTeam(self, newPlayer: Player) -> None:
-        if newPlayer not in self.players:
-            self.players.append(newPlayer)
-            if newPlayer.active:
-                if newPlayer.isPitcher():
-                    self.points.addPitchingPoints(newPlayer.points)
-                else:
-                    self.points.addHittingPoints(newPlayer.points)
+        if newPlayer in self.players:
+            return
+        elif newPlayer.active:
+            points = newPlayer.points
+            isPitcher = newPlayer.isPitcher()
+            self.points.addPitchingPoints(points) if isPitcher else self.points.addHittingPoints(points)
+        self.players.append(newPlayer)
 
     def updateFromOther(self, other: "Team") -> None:
         assert self == other
