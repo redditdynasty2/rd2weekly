@@ -17,3 +17,12 @@ You'll probably want to use a python ``virtualenv``.
 
 Remember to deactivate your virtualenv before proceeding with other projects.
 
+Running
+=======
+
+The executable lives at ``<project_home>/summary/main.py``. In theory the help information
+that comes with the CLI is enough to decipher the options you should use.
+
+Output is printed to the terminal for consumption. Something fancier may be on the way,
+but for now get ready to copy-paste.
+
