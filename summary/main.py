@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from browser import CBSBrowserSession
-from markdown_formatter import MarkdownFormatter
 
 import argparse
 import json
@@ -86,9 +85,8 @@ def main():
             args)
 
     nicknames = json.load(args.nicknames)
-    print(MarkdownFormatter.get_markdown_weekly_summary(
+    print(markdown_formatter.get_summary_string(
             teams,
-            teams_to_division,
             top_scorers,
             worst_scorers,
             nicknames))

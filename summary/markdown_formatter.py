@@ -1,33 +1,47 @@
 from collections import namedtuple
 from itertools import groupby
+from multidict import MultiDict
 
-import scoring
+import abc
 import statistics
 
 
-DivisionStats = namedtuple(
-        "DivisionStats",
-        ["name", "points", "average", "stddev", "record"])
+def get_summary_string(teams, top_performers, worst_performers, nicknames):
+    formatters = [
+            TeamSectionFormatter(teams),
+            PitcherSectionFormatter(
+                    teams,
+                    top_performers,
+                    worst_performers,
+                    nicknames),
+            AllStarFormatter(),
+            MatchupSectionFormatter(teams),
+            DivisionTableFormatter(teams)
+    ]
+    return "\n\n".join(
+            section
+            for formatter in formatters
+            for section in formatter.markdown())
 
 
 def get_points_string(points):
-    return "point" if points == 1 else "points"
+    return f"{points} point" if points == 1 else f"{points} points"
 
 
-def get_rank_string(rank):
+def get_tied_at_rank_string(rank):
     """
         Because we only work with numbers less than 10, we only have to write
         out casing for the simplest of numbers.
     """
     return (
-            "1st" if rank == 1
-            else "2nd" if rank == 2
-            else "3rd" if rank == 3
-            else f"{rank}th"
+            "(tied for 1st)" if rank == 1
+            else "(tied for 2nd)" if rank == 2
+            else "(tied for 3rd)" if rank == 3
+            else f"(tied for {rank}th)"
     )
 
 
-def get_markdown_for_section(header, bullets):
+def markdown_for_section(header, bullets):
     """
         Just to make things easier, all headers are displayed at '###' level
         and all bullets are displayed in a non-numbered list format, but
@@ -38,15 +52,65 @@ def get_markdown_for_section(header, bullets):
     return f"{markdown_string}\n\n  * {bullet_string}"
 
 
-def get_name_and_points_string(name, points):
-    return f"{name}, {points} {get_points_string(points)}"
+def team_string(name, points):
+    return f"{name}, {get_points_string(points)}"
 
 
 def get_name_team_and_points_string(name, team, points):
-    return f"{name}, {team}, {points} {get_points_string(points)}"
+    return f"{name}, {team}, {get_points_string(points)}"
 
 
-class MarkdownFormatter:
+class AbstractThreeBulletFormatter(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def sort_scorers(self, section):
+        raise Exception((
+                f"{self.__class__.__name__} has not implemented this method."
+        ))
+
+    @abc.abstractmethod
+    def scorer_bullet_string(self, scorer, points):
+        raise Exception((
+                f"{self.__class__.__name__} has not implemented this method."
+        ))
+
+    @abc.abstractmethod
+    def sections(self):
+        raise Exception((
+                f"{self.__class__.__name__} has not implemented this method."
+        ))
+
+    def markdown(self):
+
+        def section_markdown(section):
+            return markdown_for_section(
+                    section,
+                    self.section_bullets(section))
+
+        return list(map(section_markdown, self.sections()))
+
+    def section_bullets(self, section):
+        index_adjustment = 1
+        bullets = []
+
+        for index, (points, scorers) in enumerate(self.sort_scorers(section)):
+            for scorer in scorers:
+                base_string = self.scorer_bullet_string(scorer, points)
+                rank = index + index_adjustment
+                bullets.append((
+                        f"{base_string} {get_rank_string(rank)}"
+                        if len(scorers) > 1
+                        else base_string
+                ))
+
+            if len(bullets) >= 3:
+                break
+            index_adjustment += len(scorers) - 1
+
+        return bullets
+
+
+class TeamSectionFormatter(AbstractThreeBulletFormatter):
 
     TEAM_SECTION_HEADERS = [
             "Top Three Teams of the Week",
@@ -57,6 +121,41 @@ class MarkdownFormatter:
             "Burned Down Factories",
     ]
 
+    def __init__(self, teams):
+        self._teams = teams
+
+    def sort_scorers(self, section):
+        reverse_sort = section in [
+                "Top Three Teams of the Week",
+                "Offensive Powerhouses",
+                "Pitching Factories",
+        ]
+
+        if section in ["Offensive Powerhouses", "Forgot Their Bats"]:
+            sort_key = lambda team: team.hitting_points
+        elif section in ["Pitching Factories", "Burned Down Factories"]:
+            sort_key = lambda team: team.pitching_points
+        else:
+            sort_key = lambda team: team.total_points
+
+        sorted_teams = sorted(
+                self._teams.values(),
+                key=sort_key,
+                reverse=reverse_sort)
+        return [
+                (points, list(teams))
+                for points, teams in groupby(sorted_teams, key=sort_key)
+        ]
+
+    def scorer_bullet_string(self, team, points):
+        return team_string(team.name, points)
+
+    def sections(self):
+        return self.TEAM_SECTION_HEADERS
+
+
+class PitcherSectionFormatter(AbstractThreeBulletFormatter):
+
     PITCHING_HEADERS = [
             "Multi-Start Saviors",
             "1 Start Gods",
@@ -64,6 +163,60 @@ class MarkdownFormatter:
             "Had a Bad Day",
             "The Bullpen Disasters",
     ]
+
+    def __init__(self, teams, top_performers, worst_performers, nicknames):
+        self._teams = teams
+        self._top_performers = top_performers
+        self._worst_performers = worst_performers
+        self._nicknames = nicknames
+
+    def sort_scorers(self, section):
+
+        def get_scorer_entries(scorers):
+            return [
+                    (scorers_at_rank[0].points, scorers_at_rank)
+                    for scorers_at_rank in scorers
+            ]
+
+        if section == "Multi-Start Saviors":
+            return get_scorer_entries(self._top_performers["2SP"])
+        elif section == "1 Start Gods":
+            return get_scorer_entries(self._top_performers["1SP"])
+        elif section == "No Start Workhorses":
+            return get_scorer_entries(self._top_performers["RP"])
+        elif section == "Had a Bad Day":
+            return get_scorer_entries(self._worst_performers["SP"])
+        elif section == "The Bullpen Disasters":
+            return get_scorer_entries(self._worst_performers["RP"])
+        raise Exception(f"Unrecognized pitcher section '{section}'")
+
+    def scorer_bullet_string(self, pitcher, points):
+        base_string = get_name_team_and_points_string(
+                self._nicknames.get(str(pitcher.cbs_id_number), pitcher.name),
+                pitcher.team_name,
+                pitcher.points)
+
+        if pitcher.team_name in self._teams:
+            was_active = any(
+                    team_pitcher.active_pitcher
+                    for team_pitcher in self._teams[pitcher.team_name].players
+                    if pitcher.cbs_id_number == team_pitcher.cbs_id_number)
+            if not was_active:
+                return f"{base_string} (from the bench)"
+
+        return base_string
+
+    def sections(self):
+        return self.PITCHING_HEADERS
+
+
+class AllStarFormatter:
+
+    def markdown(self):
+        return []
+
+
+class MatchupSectionFormatter:
 
     MATCHUP_HEADERS = [
             "Blowout of the Week",
@@ -74,316 +227,175 @@ class MarkdownFormatter:
             "Dirty Cheater",
     ]
 
-    def __init__(self, 
-                 teams,
-                 teams_to_divisions,
-                 top_performers,
-                 worst_performers,
-                 nicknames):
+    def __init__(self, teams):
         self._teams = teams
-        self._teams_to_divisions = teams_to_divisions
-        self._top_performers = top_performers
-        self._worst_performers = worst_performers
-        self._nicknames = nicknames
+        self._winners = MultiDict()
+        self._losers = MultiDict()
+        self._ties = MultiDict()
+        for team in teams.values():
+            [self._winners.add(team.name, loser) for loser in team.wins]
+            [self._losers.add(team.name, winner) for winner in team.losses]
+            [self._ties.add(team.name, other_team) for other_team in team.ties]
 
-    @classmethod
-    def get_markdown_weekly_summary(cls,
-                                    teams,
-                                    teams_to_divisions,
-                                    top_performers,
-                                    worst_performers,
-                                    nicknames):
-        formatter = cls(
-                teams,
-                teams_to_divisions,
-                top_performers,
-                worst_performers,
-                nicknames)
+    def markdown(self):
 
-        sections = []
-        sections.extend(formatter._get_team_sections())
-        sections.append(formatter._get_all_stars())
-        sections.extend(formatter._get_pitcher_sections())
-        sections.extend(formatter._get_matchup_sections())
-        sections.append(formatter._get_division_table())
-        return "\n\n".join(sections)
-
-    def _get_team_sections(self):
-
-        def sort_teams(section):
-            if section in [
-                    "Top Three Teams of the Week",
-                    "Worst Three Teams of the Week"]:
-                sort_key = lambda team: team.total_points
-                reverse_sort = section == "Top Three Teams of the Week"
-            elif section in ["Offensive Powerhouses", "Forgot Their Bats"]:
-                sort_key = lambda team: team.hitting_points
-                reverse_sort = section == "Offensive Powerhouses"
-            elif section in ["Pitching Factories", "Burned Down Factories"]:
-                sort_key = lambda team: team.pitching_points
-                reverse_sort = section == "Pitching Factories"
-            else:
-                raise Exception((
-                        f"Unrecognized team section header {section}."
-                ))
-
-            sorted_teams = sorted(
-                    self._teams.values(),
-                    key=sort_key,
-                    reverse=reverse_sort)
-            return [
-                    (points, list(map(lambda team: team.name, group)))
-                    for points, group in groupby(sorted_teams, key=sort_key)
-            ]
-
-        def get_team_bullet_string(team_name, points, rank, is_tied):
-            team_string = get_name_and_points_string(team_name, points)
-            return (
-                    f"{team_string} (tied for {get_rank_string(rank)})"
-                    if is_tied
-                    else team_string
+        def section_markdown(section):
+            sorted_matchups = self._sort_matchups(section)[0]
+            bullets = (
+                    self._comparison_matchup_bullets(section, *sorted_matchups)
+                    if section in [
+                            "Blowout of the Week",
+                            "Closest Matchup of the Week",
+                    ]
+                    else self._multi_matchup_bullets(section, *sorted_matchups)
             )
+            return markdown_for_section(section, bullets)
 
-        def get_team_section_bullets(section):
-            index_adjustment = 1
-            bullets = []
-            for index, (points, teams) in enumerate(sort_teams(section)):
-                for team in teams:
-                    bullets.append(get_team_bullet_string(
-                            team,
-                            points,
-                            index + index_adjustment,
-                            len(teams) > 1))
-                if len(bullets) >= 3:
-                    break
-                index_adjustment += len(teams) - 1
-            return bullets
+        return list(map(section_markdown, self.MATCHUP_HEADERS))
 
-        return [
-                get_markdown_for_section(
-                        section,
-                        get_team_section_bullets(section))
-                for section in self.TEAM_SECTION_HEADERS
-        ]
+    def _sort_matchups(self, section):
 
-    def _get_all_stars(self):
-        return ""
-
-    def _get_pitcher_sections(self):
-
-        def get_pitcher_bullet_string(pitcher, rank, is_tied):
-            pitcher_name = self._nicknames.get(str(pitcher.name), pitcher.name)
-            pitcher_string = get_name_team_and_points_string(
-                    pitcher_name,
-                    pitcher.team_name,
-                    pitcher.points)
-            
-            if pitcher.team_name in self._teams:
-                team_players = self._teams[pitcher.team_name].players
-                was_active = any(
-                        team_pitcher.active_pitcher
-                        for team_pitcher in team_players
-                        if pitcher.cbs_id_number == team_pitcher.cbs_id_number)
-                if not was_active:
-                    pitcher_string = f"{pitcher_string} (from the bench)"
-
-            return (
-                    f"{pitcher_string} (tied for {get_rank_string(rank)})"
-                    if is_tied
-                    else pitcher_string
-            )
-
-        def get_pitcher_section_bullets(section):
-            if section == "Multi-Start Saviors":
-                sorted_pitchers = self._top_performers["2SP"]
-            elif section == "1 Start Gods":
-                sorted_pitchers = self._top_performers["1SP"]
-            elif section == "No Start Workhorses":
-                sorted_pitchers = self._top_performers["RP"]
-            elif section == "Had a Bad Day":
-                sorted_pitchers = self._worst_performers["SP"]
-            elif section == "The Bullpen Disasters":
-                sorted_pitchers = self._worst_performers["RP"]
-
-            index_adjustment = 1
-            bullets = []
-            for index, pitchers in enumerate(sorted_pitchers):
-                for pitcher in pitchers:
-                    bullets.append(get_pitcher_bullet_string(
-                            pitcher,
-                            index + index_adjustment,
-                            len(pitchers) > 1))
-                if len(bullets) >= 3:
-                    break
-                index_adjustment += len(pitchers) - 1
-            return bullets
-
-        return [
-                get_markdown_for_section(
-                        section,
-                        get_pitcher_section_bullets(section))
-                for section in self.PITCHING_HEADERS
-        ]
-
-    def _get_matchup_sections(self):
-        winners = {}
-        losers = {}
-        ties = {}
-        for team in self._teams.values():
-            [
-                    winners.setdefault(team.name, []).append(loser)
-                    for loser in team.wins
-            ]
-            [
-                    losers.setdefault(team.name, []).append(winner)
-                    for winner in team.losses
-            ]
-            [
-                    ties.setdefault(team.name, []).append(other_team)
-                    for other_team in team.ties
-                    if team.name not in ties.get(other_team, [])
-            ]
-
-        def get_team_points(team):
-            return self._teams[team].total_points
-
-        def get_multidict_entries(multidict):
-            return [
-                    (team, other_team)
-                    for team, other_teams in multidict.items()
-                    for other_team in other_teams
-            ]
-
-        def sort_matchups(section):
-            reverse_sort = section in [
-                    "Blowout of the Week",
-                    "Strongest Loss",
-                    "No Wins for the Effort",
-            ]
-
-            def filter_key(entry):
-                team, other_team = entry
-                if section == "Strongest Loss":
-                    return other_team in losers.get(team, [])
-                elif section == "No Wins for the Effort":
-                    return team not in winners
-                elif section == "Dirty Cheater":
-                    return team not in losers
-                else:
-                    return other_team in winners.get(team, [])
-
-            def sort_key(entry):
-                team, other_team = entry
-                if section in [
-                        "Blowout of the Week",
-                        "Closest Matchup of the Week"]:
-                    return get_team_points(team) - get_team_points(other_team)
-                else:
-                    return get_team_points(team)
-
+        def filter_key(matchup_entry):
+            primary_team, opponent = matchup_entry
             if section == "Strongest Loss":
-                entries = get_multidict_entries(losers)
+                return opponent in self._losers.getall(primary_team, [])
             elif section == "No Wins for the Effort":
-                entries = (
-                        get_multidict_entries(losers)
-                        + get_multidict_entries(ties)
-                )
+                return primary_team not in self._winners
             elif section == "Dirty Cheater":
-                entries = (
-                        get_multidict_entries(winners)
-                        + get_multidict_entries(ties)
-                )
+                return primary_team not in self._losers
             else:
-                entries = get_multidict_entries(winners)
+                return opponent in self._winners.getall(primary_team, [])
 
-            sorted_matchups = sorted(
-                    filter(filter_key, entries),
-                    key=sort_key,
-                    reverse=reverse_sort)
-            return [
-                    list(group)
-                    for points, group
-                    in groupby(sorted_matchups, key=sort_key)
-            ]
-
-        def get_matchup_points_string(section, team, other_team):
-            points = get_team_points(team)
-            team_string = get_name_and_points_string(team, points)
-
-            other_points = get_team_points(other_team)
-            other_team_string = get_name_and_points_string(
-                    other_team,
-                    other_points)
-
-            point_diff = points - other_points
-            if point_diff < 0:
-                point_diff = abs(point_diff)
-                return (
-                        f"By {point_diff} {get_points_string(point_diff)}:"
-                        f" {team_string} to {other_team_string}"
-                )
-            elif point_diff > 0:
-                return (
-                        f"By {point_diff} {get_points_string(point_diff)}:"
-                        f" {team_string} over {other_team_string}"
-                )
+        def groupby_key(matchup_entry):
+            primary_team, opponent = matchup_entry
+            primary_points = self._team_points(primary_team)
+            opponent_points = self._team_points(opponent)
+            if section in [
+                    "Blowout of the Week",
+                    "Closest Matchup of the Week"]:
+                return primary_points - opponent_points
             else:
-                return f"{team_string} tied with {other_team_string}"
+                return primary_points
 
-        def get_matchup_section_bullets(section):
-            return [
-                    get_matchup_points_string(section, team, other_team)
-                    for team, other_team in sort_matchups(section)[0]
-            ]
+        def sort_key(matchup_entry):
+            primary_team, opponent = matchup_entry
+            return (
+                    groupby_key(matchup_entry),
+                    self._team_points(primary_team),
+                    self._team_points(opponent),
+            )
 
+        if section == "Strongest Loss":
+            entries = self._losers
+        elif section == "No Wins for the Effort":
+            entries = MultiDict(self._losers, **self._ties)
+        elif section in ["Closest Matchup", "Dirty Cheater"]:
+            entries = MultiDict(self._winners, **self._ties)
+        else:
+            entries = self._winners
+
+        sorted_matchups = sorted(
+                filter(filter_key, entries.items()),
+                key=sort_key,
+                reverse=self._reverse_sort(section))
         return [
-                get_markdown_for_section(
-                        section,
-                        get_matchup_section_bullets(section))
-                for section in self.MATCHUP_HEADERS
+                (points, list(group))
+                for points, group in groupby(sorted_matchups, key=groupby_key)
         ]
 
-    def _get_division_table(self):
+    def _team_points(self, team):
+        return self._teams[team].total_points
 
-        def get_division_stats(division_name, teams, use_record=True):
-            scores = list(map(lambda team: team.total_points, teams))
-            wins = sum(map(lambda team: len(team.wins), teams), 0)
-            losses = sum(map(lambda team: len(team.losses), teams), 0)
-            ties = sum(map(lambda team: len(team.ties), teams), 0)
-            record_string = (
-                    "" if not use_record
-                    else f"{wins}-{losses}" if ties == 0
-                    else f"{wins}-{losses}-{ties}"
+    @staticmethod
+    def _reverse_sort(section):
+        return section in [
+                "Blowout of the Week",
+                "Strongest Loss",
+                "No Wins for the Effor",
+        ]
+
+    def _comparison_matchup_bullets(self, section, points, matchups):
+
+        def comparison_matchup_string(matchup_entry):
+            primary_team, opponent = matchup_entry
+
+            primary_points = self._team_points(primary_team)
+            opponent_points = self._team_points(opponent)
+
+            point_diff = primary_points - opponent_points
+            if point_diff == 0:
+                return (
+                        f"Tied at {get_points_string(primary_points)}:"
+                        f" {primary_team} and {opponent}"
+                )
+
+            return (
+                    f"{self._team_string(primary_team)}"
+                    f" over {self._team_string(opponent)}"
+                    f" by {get_points_string(point_diff)}."
             )
-            return DivisionStats(
-                    division_name,
-                    sum(scores, 0),
-                    round(statistics.mean(scores), 1),
-                    round(statistics.stdev(scores), 1),
-                    record_string)
 
-        def get_all_division_stats():
-            sort_key = lambda team: team.division
-            all_teams = self._teams.values()
-            division_stats = [
-                    DivisionStats(
-                            "Division",
-                            "Points",
-                            "Points/Team",
-                            "Std. Dev.",
-                            "Record")
+        deduplicated = []
+        [
+                deduplicated.append((primary_team, opponent))
+                for primary_team, opponent in matchups
+                if (opponent, primary_team) not in deduplicated
+        ]
+        return list(map(comparison_matchup_string, deduplicated))
+
+    def _team_string(self, team):
+        return team_string(team, self._team_points(team))
+
+    def _multi_matchup_bullets(self, section, points, matchups):
+
+        def multi_matchup_string(primary_team, opponents):
+            opponent_string = opponent_matchup_string(
+                    self._team_points(primary_team),
+                    opponents)
+            return f"{self._team_string(primary_team)}; {opponent_string}"
+
+        def opponent_matchup_string(primary_points, opponents):
+            opponent_strings = [
+                    f"over {self._team_string(opponent)}"
+                    if self._team_points(opponent) < primary_points
+                    else f"to {self._team_string(opponent)}"
+                    if self._team_points(opponent) > primary_points
+                    else f"tied with {self._team_points(opponent)}"
+                    for opponent in opponents
             ]
-            division_stats.extend(
-                    get_division_stats(division, list(teams))
-                    for division, teams
-                    in groupby(
-                            sorted(all_teams, key=sort_key),
-                            key=sort_key))
-            division_stats.append(get_division_stats("League", all_teams))
-            return division_stats
 
+            if len(opponent_strings) == 1:
+                return opponent_strings[0]
+            elif len(opponent_strings) > 2:
+                first_string = "; ".join(opponent_strings[:-2])
+                last_string = "; and ".join(opponent_strings[-2:])
+                return f"{first_string}; {last_string}"
+
+            return ", and ".join(opponent_strings)
+
+        matchup_dict = MultiDict(matchups)
+        return [
+                multi_matchup_string(team, matchup_dict.getall(team))
+                for team in list(dict.fromkeys(matchup_dict.keys()))
+        ]
+
+
+DivisionStats = namedtuple(
+        "DivisionStats",
+        ["name", "points", "average", "stddev", "record"])
+
+
+class DivisionTableFormatter:
+
+    def __init__(self, teams):
+        self._divisions = MultiDict(
+                (team.division, team) for team in teams.values()
+        )
+
+    def markdown(self):
         markdown_string = "### Division Stats\n"
-        for index, entries in enumerate(list(zip(*get_all_division_stats()))):
+        all_stats = self._all_division_stats()
+        for index, entries in enumerate(list(zip(*all_stats))):
             columns = [
                     f"**{entry}**" if index == 0 else f"{entry}"
                     for entry in entries
@@ -393,5 +405,46 @@ class MarkdownFormatter:
                 alignment = " | ".join(len(columns) * [":---:"])
                 markdown_string = f"{markdown_string}\n| {alignment} |"
 
-        return markdown_string
+        return [markdown_string]
+
+    def _all_division_stats(self):
+        stats = [
+                DivisionStats(
+                        "Division",
+                        "Points",
+                        "Points/Team",
+                        "Std. Dev.",
+                        "Record")
+        ]
+
+        stats.extend(
+                self._division_stats(division)
+                for division 
+                in sorted(list(dict.fromkeys(self._divisions.keys()))))
+
+        stats.append(self._division_stats("League"))
+        return stats
+
+    def _division_stats(self, division_name):
+        teams = (
+                self._divisions.values() if division_name == "League"
+                else self._divisions.getall(division_name)
+        )
+        use_record = division_name != "League"
+
+        scores = list(map(lambda team: team.total_points, teams))
+        wins = sum(map(lambda team: len(team.wins), teams), 0)
+        losses = sum(map(lambda team: len(team.losses), teams), 0)
+        ties = sum(map(lambda team: len(team.ties), teams), 0)
+        record_string = (
+                "" if not use_record
+                else f"{wins}-{losses}" if ties == 0
+                else f"{wins}-{losses}-{ties}"
+        )
+        return DivisionStats(
+                division_name,
+                sum(scores, 0),
+                round(statistics.mean(scores), 1),
+                round(statistics.stdev(scores), 1),
+                record_string)
 
