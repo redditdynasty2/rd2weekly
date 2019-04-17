@@ -1,5 +1,6 @@
 beautifulsoup4==4.7.1
 multidict==4.5.2
 selenium==3.141.0
+sortedcontainers==2.1.0
 soupsieve==1.8
 urllib3==1.24.1

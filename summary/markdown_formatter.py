@@ -1,12 +1,12 @@
 from collections import namedtuple
-from itertools import groupby
+from itertools import groupby, product
 from multidict import MultiDict
 
 import abc
 import statistics
 
 
-def get_summary_string(teams, top_performers, worst_performers, nicknames):
+def summary_string(teams, top_performers, worst_performers, nicknames):
     formatters = [
             TeamSectionFormatter(teams),
             PitcherSectionFormatter(
@@ -24,11 +24,11 @@ def get_summary_string(teams, top_performers, worst_performers, nicknames):
             for section in formatter.markdown())
 
 
-def get_points_string(points):
+def points_string(points):
     return f"{points} point" if points == 1 else f"{points} points"
 
 
-def get_tied_at_rank_string(rank):
+def tied_at_rank_string(rank):
     """
         Because we only work with numbers less than 10, we only have to write
         out casing for the simplest of numbers.
@@ -53,11 +53,11 @@ def markdown_for_section(header, bullets):
 
 
 def team_string(name, points):
-    return f"{name}, {get_points_string(points)}"
+    return f"{name}, {points_string(points)}"
 
 
-def get_name_team_and_points_string(name, team, points):
-    return f"{name}, {team}, {get_points_string(points)}"
+def name_team_and_points_string(name, team, points):
+    return f"{name}, {team}, {points_string(points)}"
 
 
 class AbstractThreeBulletFormatter(metaclass=abc.ABCMeta):
@@ -98,7 +98,7 @@ class AbstractThreeBulletFormatter(metaclass=abc.ABCMeta):
                 base_string = self.scorer_bullet_string(scorer, points)
                 rank = index + index_adjustment
                 bullets.append((
-                        f"{base_string} {get_rank_string(rank)}"
+                        f"{base_string} {tied_at_rank_string(rank)}"
                         if len(scorers) > 1
                         else base_string
                 ))
@@ -172,26 +172,26 @@ class PitcherSectionFormatter(AbstractThreeBulletFormatter):
 
     def sort_scorers(self, section):
 
-        def get_scorer_entries(scorers):
+        def scorer_entries(scorers):
             return [
                     (scorers_at_rank[0].points, scorers_at_rank)
                     for scorers_at_rank in scorers
             ]
 
         if section == "Multi-Start Saviors":
-            return get_scorer_entries(self._top_performers["2SP"])
+            return scorer_entries(self._top_performers["2SP"])
         elif section == "1 Start Gods":
-            return get_scorer_entries(self._top_performers["1SP"])
+            return scorer_entries(self._top_performers["1SP"])
         elif section == "No Start Workhorses":
-            return get_scorer_entries(self._top_performers["RP"])
+            return scorer_entries(self._top_performers["RP"])
         elif section == "Had a Bad Day":
-            return get_scorer_entries(self._worst_performers["SP"])
+            return scorer_entries(self._worst_performers["SP"])
         elif section == "The Bullpen Disasters":
-            return get_scorer_entries(self._worst_performers["RP"])
+            return scorer_entries(self._worst_performers["RP"])
         raise Exception(f"Unrecognized pitcher section '{section}'")
 
     def scorer_bullet_string(self, pitcher, points):
-        base_string = get_name_team_and_points_string(
+        base_string = name_team_and_points_string(
                 self._nicknames.get(str(pitcher.cbs_id_number), pitcher.name),
                 pitcher.team_name,
                 pitcher.points)
@@ -311,7 +311,7 @@ class MatchupSectionFormatter:
         return section in [
                 "Blowout of the Week",
                 "Strongest Loss",
-                "No Wins for the Effor",
+                "No Wins for the Effort",
         ]
 
     def _comparison_matchup_bullets(self, section, points, matchups):
@@ -325,14 +325,14 @@ class MatchupSectionFormatter:
             point_diff = primary_points - opponent_points
             if point_diff == 0:
                 return (
-                        f"Tied at {get_points_string(primary_points)}:"
+                        f"Tied at {points_string(primary_points)}:"
                         f" {primary_team} and {opponent}"
                 )
 
             return (
                     f"{self._team_string(primary_team)}"
                     f" over {self._team_string(opponent)}"
-                    f" by {get_points_string(point_diff)}."
+                    f" by {points_string(point_diff)}."
             )
 
         deduplicated = []
@@ -447,4 +447,93 @@ class DivisionTableFormatter:
                 round(statistics.mean(scores), 1),
                 round(statistics.stdev(scores), 1),
                 record_string)
+
+
+class AllStarSorter:
+
+    ALL_STAR_POSITIONS = OrderedDict([
+            ("C", 1),
+            ("1B", 1),
+            ("2B", 1),
+            ("3B", 1),
+            ("SS", 1),
+            ("CF", 1),
+            ("OF", 2),
+            ("U", 2),
+    ])
+
+    def __init__(self, top_performers):
+        self._scorer_id_dict = SortedDict()
+        self._scorer_position_dict = defaultdict(set)
+        self._position_dict = defaultdict(set)
+
+        for position, scorers in top_performers:
+            if "P" in position:
+                continue
+
+            new_scorers = [scorer for players in scorers for scorer in players]
+
+            for scorer in new_scorers:
+                scorer_id = scorer.cbs_id_number
+                self._scorer_id_dict[scorer_id] = scorer
+                for position in {position, "U"}:
+                    self._position_dict[position].add(scorer_id)
+                    self._scorer_position_dict[scorer_id].add(position)
+
+    def markdown(self):
+        lineups = self._optimal_lineup(positions)
+        markdowns = [self._lineup_markdown(lineup) for lineup in lineups]
+        return [
+                markdown_for_section("All Stars", bullets)
+                for bullets in markdowns
+        ]
+
+    def _optimal_lineup(self, positions):
+        positions = []
+        players = []
+        for position, count in self.ALL_STAR_POSITIONS.items():
+            positions.extend([position] * count)
+            players.extend([self._position_dict] * count)
+
+        lineups = self._deduplicate_lineups(self._optimal_lineups(players))
+        return [list(zip(positions, lineup)) for lineup in lineups]
+
+    def _optimal_lineups(self, players):
+        optimal_points = 0
+        optimal_lineups = []
+        optimal_sets = []
+
+        for lineup in product(players):
+            as_set = set(lineup)
+            if len(lineup) != len(as_set):
+                # duplicate player in the lineup
+                continue
+
+            total_points = sum(map(
+                    lambda player: self._scorer_id_dict[player].points,
+                    lineup)
+
+            if total_points > optimal_points:
+                optimal_points = total_points
+                optimal_lineups = [lineup]
+                optimal_sets = [as_set]
+            elif total_points == optimal_points and as_set not in optimal_sets:
+                optimal_lineups.append(lineup)
+                optimal_sets.append(as_set)
+
+        return optimal_lineups
+
+    def _lineup_markdown(self, lineup):
+
+        def scorer_string(scorer_id):
+            scorer = self._scorer_id_dict[scorer_id]
+            return name_team_and_points_string(
+                    scorer.name,
+                    scorer.team,
+                    scorer.points)
+
+        return [
+                f"{position}: {scorer_string(scorer_id)}"
+                for position, scorer_id in lineup
+        ]
 
