@@ -1,6 +1,7 @@
-from collections import namedtuple
-from itertools import groupby, product
+from collections import defaultdict, namedtuple, OrderedDict
+from itertools import chain, groupby, product
 from multidict import MultiDict
+from sortedcontainers import SortedDict, SortedSet
 
 import abc
 import statistics
@@ -14,7 +15,7 @@ def summary_string(teams, top_performers, worst_performers, nicknames):
                     top_performers,
                     worst_performers,
                     nicknames),
-            AllStarFormatter(),
+            AllStarFormatter(top_performers, nicknames),
             MatchupSectionFormatter(teams),
             DivisionTableFormatter(teams)
     ]
@@ -212,8 +213,106 @@ class PitcherSectionFormatter(AbstractThreeBulletFormatter):
 
 class AllStarFormatter:
 
+    ALL_STAR_POSITIONS = OrderedDict([
+            ("C", 1),
+            ("1B", 1),
+            ("2B", 1),
+            ("3B", 1),
+            ("SS", 1),
+            ("CF", 1),
+            ("OF", 2),
+            ("U", 2),
+    ])
+
+    def __init__(self, top_performers, nicknames):
+        self._scorer_id_dict = {}
+        self._nicknames = nicknames
+        self._position_dict = defaultdict(set)
+
+        scorer_ids_per_position = dict(
+                (position, set(map(
+                        lambda scorer_id: scorer_id.cbs_id_number,
+                        chain(*scorers))))
+                for position, scorers in top_performers.items())
+
+        for position, scorers in top_performers.items():
+            if "P" in position:
+                continue
+
+            num_unique = 0
+            max_count = self.ALL_STAR_POSITIONS[position]
+            for scorer in chain(*scorers):
+                if num_unique >= max_count:
+                    break
+
+                scorer_id = scorer.cbs_id_number
+                self._scorer_id_dict[scorer_id] = scorer
+                self._position_dict[position].add(scorer_id)
+
+                for other_position, ids in scorer_ids_per_position.items():
+                    if other_position != position and scorer_id in ids:
+                        break
+                else:
+                    num_unique += 1
+
     def markdown(self):
-        return []
+        lineups = self._optimize()
+        markdowns = [self._lineup_markdown(lineup) for lineup in lineups]
+        return [
+                markdown_for_section("All Stars", bullets)
+                for bullets in markdowns
+        ]
+
+    def _optimize(self):
+        positions = []
+        players = []
+        for position, count in self.ALL_STAR_POSITIONS.items():
+            positions.extend([position] * count)
+            players.extend([list(self._position_dict[position])] * count)
+
+        return list(map(
+                lambda lineup: list(zip(positions, lineup)),
+                self._optimal_lineups(players)))
+
+    def _optimal_lineups(self, players):
+        optimal_points = 0
+        optimal_lineups = []
+        optimal_sets = []
+
+        for lineup_tuple in product(*players):
+            lineup = list(lineup_tuple)
+            as_set = set(lineup_tuple)
+            if len(lineup) != len(as_set):
+                # duplicate player in the lineup
+                continue
+
+            total_points = sum(map(
+                    lambda scorer_id: self._scorer_id_dict[scorer_id].points,
+                    lineup))
+
+            if total_points > optimal_points:
+                optimal_points = total_points
+                optimal_lineups = [lineup]
+                optimal_sets = [as_set]
+            elif total_points == optimal_points and as_set not in optimal_sets:
+                optimal_lineups.append(lineup)
+                optimal_sets.append(as_set)
+
+        return optimal_lineups
+
+    def _lineup_markdown(self, lineup):
+
+        def scorer_string(scorer_id):
+            scorer = self._scorer_id_dict[scorer_id]
+            return name_team_and_points_string(
+                    self._nicknames.get(scorer_id, scorer.name),
+                    scorer.team_name,
+                    scorer.points)
+
+        return [
+                f"{position}: {scorer_string(scorer_id)}"
+                for position, scorer_id in lineup
+        ]
 
 
 class MatchupSectionFormatter:
@@ -447,93 +546,4 @@ class DivisionTableFormatter:
                 round(statistics.mean(scores), 1),
                 round(statistics.stdev(scores), 1),
                 record_string)
-
-
-class AllStarSorter:
-
-    ALL_STAR_POSITIONS = OrderedDict([
-            ("C", 1),
-            ("1B", 1),
-            ("2B", 1),
-            ("3B", 1),
-            ("SS", 1),
-            ("CF", 1),
-            ("OF", 2),
-            ("U", 2),
-    ])
-
-    def __init__(self, top_performers):
-        self._scorer_id_dict = SortedDict()
-        self._scorer_position_dict = defaultdict(set)
-        self._position_dict = defaultdict(set)
-
-        for position, scorers in top_performers:
-            if "P" in position:
-                continue
-
-            new_scorers = [scorer for players in scorers for scorer in players]
-
-            for scorer in new_scorers:
-                scorer_id = scorer.cbs_id_number
-                self._scorer_id_dict[scorer_id] = scorer
-                for position in {position, "U"}:
-                    self._position_dict[position].add(scorer_id)
-                    self._scorer_position_dict[scorer_id].add(position)
-
-    def markdown(self):
-        lineups = self._optimal_lineup(positions)
-        markdowns = [self._lineup_markdown(lineup) for lineup in lineups]
-        return [
-                markdown_for_section("All Stars", bullets)
-                for bullets in markdowns
-        ]
-
-    def _optimal_lineup(self, positions):
-        positions = []
-        players = []
-        for position, count in self.ALL_STAR_POSITIONS.items():
-            positions.extend([position] * count)
-            players.extend([self._position_dict] * count)
-
-        lineups = self._deduplicate_lineups(self._optimal_lineups(players))
-        return [list(zip(positions, lineup)) for lineup in lineups]
-
-    def _optimal_lineups(self, players):
-        optimal_points = 0
-        optimal_lineups = []
-        optimal_sets = []
-
-        for lineup in product(players):
-            as_set = set(lineup)
-            if len(lineup) != len(as_set):
-                # duplicate player in the lineup
-                continue
-
-            total_points = sum(map(
-                    lambda player: self._scorer_id_dict[player].points,
-                    lineup)
-
-            if total_points > optimal_points:
-                optimal_points = total_points
-                optimal_lineups = [lineup]
-                optimal_sets = [as_set]
-            elif total_points == optimal_points and as_set not in optimal_sets:
-                optimal_lineups.append(lineup)
-                optimal_sets.append(as_set)
-
-        return optimal_lineups
-
-    def _lineup_markdown(self, lineup):
-
-        def scorer_string(scorer_id):
-            scorer = self._scorer_id_dict[scorer_id]
-            return name_team_and_points_string(
-                    scorer.name,
-                    scorer.team,
-                    scorer.points)
-
-        return [
-                f"{position}: {scorer_string(scorer_id)}"
-                for position, scorer_id in lineup
-        ]
 

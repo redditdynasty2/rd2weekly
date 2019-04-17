@@ -85,7 +85,7 @@ def main():
             args)
 
     nicknames = json.load(args.nicknames)
-    print(markdown_formatter.get_summary_string(
+    print(markdown_formatter.summary_string(
             teams,
             top_scorers,
             worst_scorers,
