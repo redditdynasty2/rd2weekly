@@ -6,11 +6,11 @@ Scrapes the CBS fantasy baseball site to generate a weekly summary for export to
 Installation
 ============
 
-You'll probably want to use a python ``virtualenv``.
+You'll probably want to use a python ``virtualenv``. The example shown is for Python > 3.6.
 
 .. code-block:: bash
 
-    $ venv env
+    $ python3 -m venv env
     $ source env/bin/activate
     $ pip install -r requirements.txt
     $ npm install
