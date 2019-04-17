@@ -225,35 +225,77 @@ class AllStarFormatter:
     ])
 
     def __init__(self, top_performers, nicknames):
-        self._scorer_id_dict = {}
+        self._scorers = {}
         self._nicknames = nicknames
-        self._position_dict = defaultdict(set)
-
-        scorer_ids_per_position = dict(
-                (position, set(map(
-                        lambda scorer_id: scorer_id.cbs_id_number,
-                        chain(*scorers))))
-                for position, scorers in top_performers.items())
+        self._position_dict = defaultdict(list)
 
         for position, scorers in top_performers.items():
             if "P" in position:
                 continue
 
-            num_unique = 0
-            max_count = self.ALL_STAR_POSITIONS[position]
             for scorer in chain(*scorers):
-                if num_unique >= max_count:
-                    break
+                self._scorers[scorer.cbs_id_number] = scorer
+                self._position_dict[position].append(scorer.cbs_id_number)
 
-                scorer_id = scorer.cbs_id_number
-                self._scorer_id_dict[scorer_id] = scorer
-                self._position_dict[position].add(scorer_id)
+    # Without reducing the search space, the best case scenario is to
+    # run through 10^10 potential lineups. At one point I tried to not
+    # perform this optimization, but I never got around to letting the
+    # computation finish. In the worst case scenario we still will have
+    # issues here, but in general there should be significant
+    # performance improvements from this method.
+    #
+    # Since we know exactly how many players from each position we need
+    # to load into the lineup, we can eliminate any players that don't
+    # have any chance of making it into the lineup. Any time we find
+    # more players unique to a position than there are lineup spots for
+    # that position, we can eliminate all players that scored less than
+    # those players.
+    #
+    # This optimization is unlikely to reduce the search space for the
+    # 'U' or 'OF' positions, but will likely cut down significantly on
+    # the infield positions. Remember than each additional player at a
+    # position requires us to check 10 additional lineup configurations
+    # (in the best case scenario!) and you'll understand that reducing
+    # the infield position search spaces by half goes a long way.
+    def _reduce_search_space(self, top_performers):
+        for position, scorers in top_performers.items():
+            if "P" in position:
+                continue
 
-                for other_position, ids in scorer_ids_per_position.items():
-                    if other_position != position and scorer_id in ids:
+            all_other_scorers = [
+                    *other_scorers
+                    for other_position, other_scorers
+                    in self._position_dict.items()
+                    if other_position != position
+            ]
+
+            num_unique = 0
+            count = self.ALL_STAR_POSITIONS[position]
+
+            new_scorers = []
+            for scorer_group in scorers:
+                new_scorers.extend(scorer_group)
+                for scorer in scorer_group:
+                    if scorer.cbs_id_number not in all_other_scorers:
+                        num_unique += 1
+                    if num_unique >= count:
                         break
                 else:
-                    num_unique += 1
+                    continue
+                break
+            else:
+                continue
+            # This is annoying syntax but Python is an annoying
+            # language. Basically: if we loop through all of the
+            # players in a position and don't hit the inner break,
+            # we exit the for loops in the 'else' clauses. These 'else'
+            # clauses prevent us from doing any modifications to the
+            # relevant dictionary (below) by triggering continue on the
+            # outer for-loop.
+            #
+            # In short, if we ever encounter a position with no unique
+            # players, we make no changes to the underlying dictionary.
+            self._position_dict[position] = new_scorers
 
     def markdown(self):
         lineups = self._optimize()
@@ -268,7 +310,7 @@ class AllStarFormatter:
         players = []
         for position, count in self.ALL_STAR_POSITIONS.items():
             positions.extend([position] * count)
-            players.extend([list(self._position_dict[position])] * count)
+            players.extend([self._position_dict[position]] * count)
 
         return list(map(
                 lambda lineup: list(zip(positions, lineup)),
@@ -287,7 +329,7 @@ class AllStarFormatter:
                 continue
 
             total_points = sum(map(
-                    lambda scorer_id: self._scorer_id_dict[scorer_id].points,
+                    lambda scorer_id: self._scorers[scorer_id].points,
                     lineup))
 
             if total_points > optimal_points:
@@ -303,7 +345,7 @@ class AllStarFormatter:
     def _lineup_markdown(self, lineup):
 
         def scorer_string(scorer_id):
-            scorer = self._scorer_id_dict[scorer_id]
+            scorer = self._scorers[scorer_id]
             return name_team_and_points_string(
                     self._nicknames.get(scorer_id, scorer.name),
                     scorer.team_name,
@@ -451,7 +493,10 @@ class MatchupSectionFormatter:
             opponent_string = opponent_matchup_string(
                     self._team_points(primary_team),
                     opponents)
-            return f"{self._team_string(primary_team)}; {opponent_string}"
+            return (
+                    f"{self._team_string(primary_team)}"
+                    f" {';' if len(opponents) > 1 else ''} {opponent_string}"
+            )
 
         def opponent_matchup_string(primary_points, opponents):
             opponent_strings = [
