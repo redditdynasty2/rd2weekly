@@ -234,8 +234,11 @@ class AllStarFormatter:
                 continue
 
             for scorer in chain(*scorers):
-                self._scorers[scorer.cbs_id_number] = scorer
-                self._position_dict[position].append(scorer.cbs_id_number)
+                scorer_id = int(scorer.cbs_id_number)
+                self._scorers[scorer_id] = scorer
+                self._position_dict[position].append(scorer_id)
+
+        self._reduce_search_space()
 
     # Without reducing the search space, the best case scenario is to
     # run through 10^10 potential lineups. At one point I tried to not
@@ -257,26 +260,32 @@ class AllStarFormatter:
     # position requires us to check 10 additional lineup configurations
     # (in the best case scenario!) and you'll understand that reducing
     # the infield position search spaces by half goes a long way.
-    def _reduce_search_space(self, top_performers):
-        for position, scorers in top_performers.items():
+    def _reduce_search_space(self):
+        old_dict = dict(self._position_dict)
+        for position, scorers in old_dict.items():
             if "P" in position:
                 continue
 
-            all_other_scorers = [
-                    *other_scorers
-                    for other_position, other_scorers
-                    in self._position_dict.items()
+            all_other_scorers = set()
+            [
+                    all_other_scorers.update(other_scorers)
+                    for other_position, other_scorers in old_dict.items()
                     if other_position != position
             ]
 
             num_unique = 0
             count = self.ALL_STAR_POSITIONS[position]
 
+            scorer_groups = groupby(
+                    scorers,
+                    lambda scorer_id: float(self._scorers[scorer_id].points))
+
             new_scorers = []
-            for scorer_group in scorers:
-                new_scorers.extend(scorer_group)
-                for scorer in scorer_group:
-                    if scorer.cbs_id_number not in all_other_scorers:
+            for k, scorer_group in scorer_groups:
+                scorer_group_list = list(scorer_group)
+                new_scorers.extend(scorer_group_list)
+                for scorer_id in scorer_group_list:
+                    if scorer_id not in all_other_scorers:
                         num_unique += 1
                     if num_unique >= count:
                         break
@@ -296,6 +305,9 @@ class AllStarFormatter:
             # In short, if we ever encounter a position with no unique
             # players, we make no changes to the underlying dictionary.
             self._position_dict[position] = new_scorers
+        else:
+            if old_dict != self._position_dict:
+                self._reduce_search_space()
 
     def markdown(self):
         lineups = self._optimize()
@@ -347,7 +359,7 @@ class AllStarFormatter:
         def scorer_string(scorer_id):
             scorer = self._scorers[scorer_id]
             return name_team_and_points_string(
-                    self._nicknames.get(scorer_id, scorer.name),
+                    self._nicknames.get(str(scorer_id), scorer.name),
                     scorer.team_name,
                     scorer.points)
 
@@ -495,7 +507,7 @@ class MatchupSectionFormatter:
                     opponents)
             return (
                     f"{self._team_string(primary_team)}"
-                    f" {';' if len(opponents) > 1 else ''} {opponent_string}"
+                    f"{';' if len(opponents) > 1 else ''} {opponent_string}"
             )
 
         def opponent_matchup_string(primary_points, opponents):
