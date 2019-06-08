@@ -111,11 +111,21 @@ def parse_player_name_and_id(player_soup, name_tag):
         # tag. The display name will often abbreviate the name even when using
         # a screen with infinite width. In the above example, the display name
         # for the player would likely be "Player H. Name".
+  #<a aria-label=" Travis d" arnaud="" c="" class="playerLink" href="/players/playerpage/1730742" tb'="">
+   #Travis d'Arnaud
+  #</a>
+  #<span class="playerPositionAndTeam">
+   #C | TB
+  #</span>
         player_name_match = re.match(
                 r"^\s*(.+)\s+[A-Z1-3]+\s+[A-Z]+\s*$",
                 info_tag[name_tag])
-        player_name = player_name_match.group(1)
-
+        player_name = (
+                player_name_match.group(1)
+                if player_name_match
+                else info_tag.text.strip()
+        )
+        
         cbs_id_number_match = re.match(
                 r"^/players/playerpage/(\d+)$",
                 info_tag["href"])
@@ -123,6 +133,7 @@ def parse_player_name_and_id(player_soup, name_tag):
         return player_name, cbs_id_number
     except AttributeError as root_exception:
         raise AttributeError((
-                f"Failed to read player with soup:\n{player_soup.prettify()}"
+                f"Failed to read player tag {info_tag}, {name_tag} with"
+                f" soup:\n{player_soup.prettify()}"
         )) from root_exception
 
