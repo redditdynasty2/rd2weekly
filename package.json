@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/swanysimon/rd2weekly#readme",
   "dependencies": {
-    "geckodriver": "^1.16.0"
+    "geckodriver": "^1.16.2"
   }
 }
