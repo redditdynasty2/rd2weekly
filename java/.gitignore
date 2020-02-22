@@ -1,0 +1,55 @@
+# This gitignore file was generated from the following sources:
+#   - Gradle: https://www.gitignore.io/api/gradle
+#   - IntelliJ: https://www.gitignore.io/api/intellij
+#   - Java: https://www.gitignore.io/api/java
+# The contents were then sorted, reversed, and comments removed.
+out/
+hs_err_pid*
+gradle-app.setting
+fabric.properties
+crashlytics.properties
+crashlytics-build.properties
+com_crashlytics_export_strings.xml
+cmake-build-*/
+build/
+atlassian-ide-plugin.xml
+.mtj.tmp/
+.idea_modules/
+.idea/replstate.xml
+.idea/httpRequests
+.idea/caches/build_file_checksums.ser
+.idea/**/workspace.xml
+.idea/**/usage.statistics.xml
+.idea/**/uiDesigner.xml
+.idea/**/tasks.xml
+.idea/**/sqlDataSources.xml
+.idea/**/sonarlint/
+.idea/**/sonarIssues.xml
+.idea/**/shelf
+.idea/**/mongoSettings.xml
+.idea/**/markdown-navigator/
+.idea/**/markdown-navigator.xml
+.idea/**/libraries
+.idea/**/gradle.xml
+.idea/**/dynamic.xml
+.idea/**/dictionaries
+.idea/**/dbnavigator.xml
+.idea/**/dataSources/
+.idea/**/dataSources.local.xml
+.idea/**/dataSources.ids
+.idea/**/contentModel.xml
+.gradletasknamecache
+.gradle
+*.zip
+*.war
+*.tar.gz
+*.rar
+*.nar
+*.log
+*.jar
+*.iws
+*.ear
+*.ctxt
+*.class
+**/build/
+!gradle-wrapper.jar

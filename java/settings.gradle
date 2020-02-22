@@ -1,0 +1,5 @@
+pluginManagement.plugins {
+    id "swanysimon.show-test-runs" version "$show_test_runs_plugin_version"
+}
+
+rootProject.name = "rd2weekly"
