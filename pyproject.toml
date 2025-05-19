@@ -26,7 +26,3 @@ line_length = 88
 
 [tool.mypy]
 disallow_untyped_defs = true
-
-[tool.pyright]
-venvPath = "."
-venv = ".venv"
