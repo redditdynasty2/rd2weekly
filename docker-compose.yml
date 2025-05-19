@@ -1,0 +1,10 @@
+services:
+  selenium:
+    image: selenium/standalone-firefox:latest
+    ports: 
+      - "4444:4444"
+    healthcheck:
+      test: [CMD, /opt/bin/check-grid.sh]
+      timeout: 0.25s
+      interval: 0.5s
+      retries: 10

@@ -9,15 +9,13 @@ from collections import OrderedDict, defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from itertools import groupby, product
+import subprocess
 from time import sleep
 from types import TracebackType
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar
 
 import click
-import docker  # type: ignore
 from bs4 import BeautifulSoup, Tag  # type: ignore
-from docker import DockerClient
-from docker.models.containers import Container  # type: ignore
 from selenium.webdriver import Remote
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
@@ -186,42 +184,31 @@ class Matchup:
         return hash((self.team1.name, self.team2.name))
 
 
-MarkdownType = Enum("MarkdownType", "BULLET TABLE")
+class MarkdownType(Enum):
+    BULLET = "BULLET"
+    TABLE = "TABLE"
 
 
 class WebDriver:
-    def __init__(self, client: DockerClient):
-        self.client = client
-        self.container: Optional[Container] = None
+    def __init__(self):
+        self.driver: str | None = None
 
     def __enter__(self) -> "WebDriver":
-        image = "selenium/standalone-firefox"
-        tag = "4.3.0-20220726"
-        self.client.images.pull(image, tag=tag)
-        self.container = self.client.containers.run(
-            f"{image}:{tag}",
-            detach=True,
-            ports={4444: 4444},
-            remove=True,
-            shm_size="2g",
-        )
-        for _ in range(100):
-            health = self.container.exec_run("/opt/bin/check-grid.sh", tty=True)
-            if health.exit_code == 0:
-                return self
-            sleep(0.5)
-        else:
-            raise Exception("Timed out starting selenuim container")
+        subprocess.run("docker compose up --wait", check=True, shell=True)
+        self.driver = subprocess.check_output(
+            "docker compose port selenium 4444",
+            shell=True,
+            text=True,
+        ).strip()
+        return self
 
     def __exit__(
         self,
-        type: Optional[type[BaseException]],
-        value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        type_: type[BaseException] | None,
+        value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
-        if self.container:
-            self.container.stop()
-            self.container = None
+        subprocess.check_output("docker compose down", shell=True)
         if value:
             raise value
 
@@ -231,9 +218,9 @@ class WebDriver:
 @click.option("-u", "--username", type=str, prompt="Your CBS username")
 @click.option("-p", "--password", type=str, prompt="Your CBS password")
 def generate_summary(scoring_period: int, username: str, password: str) -> None:
-    with WebDriver(docker.from_env()) as _:
+    with WebDriver() as _:
         driver_options = Options()
-        driver_options.headless = True
+        driver_options.add_argument("--headless=new")
         with Remote(options=driver_options) as browser:
             login(browser, username, password)
 
@@ -405,15 +392,15 @@ def login(browser: Remote, username: str, password: str) -> None:
     browser.get(LEAGUE_HOME)
     WebDriverWait(browser, 10).until(expect.url_contains("/login"))
 
-    username_field = browser.find_element(By.ID, "userid")
+    username_field = browser.find_element(By.NAME, "email")
     username_field.clear()
     username_field.send_keys(username)
 
-    password_field = browser.find_element(By.ID, "password")
+    password_field = browser.find_element(By.NAME, "password")
     password_field.clear()
     password_field.send_keys(password)
 
-    browser.find_element(By.CSS_SELECTOR, "input[type=submit]").click()
+    browser.find_element(By.CSS_SELECTOR, "button[type=submit]").click()
     WebDriverWait(browser, 10).until(expect.url_contains(LEAGUE_HOME))
     browser.refresh()
 

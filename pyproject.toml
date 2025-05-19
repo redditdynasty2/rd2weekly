@@ -9,15 +9,6 @@ dependencies = [
     "selenium",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "black",
-    "flake8 < 5",
-    "isort",
-    "mypy",
-    "pyproject-flake8",
-]
-
 [tool.flake8]
 max-line-length = 88
 
