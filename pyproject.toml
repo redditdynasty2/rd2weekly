@@ -1,19 +1,33 @@
 [project]
 name = "rd2weekly"
-requires-python = ">=3.8"
+requires-python = ">=3.12,<3.13"
 version = "0.0.1"
 dependencies = [
     "beautifulsoup4",
     "click",
-    "docker",
     "selenium",
 ]
 
-[tool.flake8]
-max-line-length = 88
+[dependency-groups]
+dev = [
+    "ruff",
+]
 
-[tool.isort]
-line_length = 88
+[tool.ruff]
+fix = true
+line-length = 100
+show-fixes = true
+target-version = "py312"
 
-[tool.mypy]
-disallow_untyped_defs = true
+[tool.ruff.lint]
+select = [
+    "B",       # Flake8 BugBear plugin to find likely bugs
+    "C4",      # Flake8 Comprehensions plugin to find better list/dictionary/etc comprehensions
+    "E", "W",  # PEP8 Error and Warning codes
+    "F",       # Pyflakes Error codes
+    "G",       # Flake8 Logging plugin to verify log message formatting
+    "I",       # Import order and style
+    "Q",       # Flake8 Quotes plugin for consistent quote usage
+    "RUF",     # Ruff general best practices
+    "UP",      # PyUpgrade to encourage new syntax when available
+]

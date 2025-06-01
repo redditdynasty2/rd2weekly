@@ -5,14 +5,14 @@ import itertools
 import operator
 import re
 import statistics
+import subprocess
 from collections import OrderedDict, defaultdict
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from enum import Enum
 from itertools import groupby, product
-import subprocess
-from time import sleep
 from types import TracebackType
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, TypeVar
+from typing import TypeVar
 
 import click
 from bs4 import BeautifulSoup, Tag  # type: ignore
@@ -24,7 +24,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 LEAGUE_HOME: str = "https://reddit2.baseball.cbssports.com"
 
-DIVISIONS: Dict[str, str] = {
+DIVISIONS: dict[str, str] = {
     # AL East
     "Blue Jays": "AL East",
     "Guardians": "AL East",
@@ -61,7 +61,7 @@ DIVISIONS: Dict[str, str] = {
     "Rockies": "NL West",
 }
 
-ALL_STAR_POSITIONS: Dict[str, int] = {
+ALL_STAR_POSITIONS: dict[str, int] = {
     "C": 1,
     "1B": 1,
     "2B": 1,
@@ -72,7 +72,7 @@ ALL_STAR_POSITIONS: Dict[str, int] = {
     "U": 2,
 }
 
-NICKNAMES: Dict[int, str] = {
+NICKNAMES: dict[int, str] = {
     530362: "Kate Upton",
     1232129: "Big Dick Rick",
     1630093: "DONGcarlo Stanton",
@@ -99,17 +99,17 @@ class Team:
     name: str
     hitting_points: float = 0
     pitching_points: float = 0
-    players: Set[RosteredPlayer] = field(default_factory=set, init=False)
-    wins: List[str] = field(default_factory=list, init=False)
-    losses: List[str] = field(default_factory=list, init=False)
-    ties: List[str] = field(default_factory=list, init=False)
+    players: set[RosteredPlayer] = field(default_factory=set, init=False)
+    wins: list[str] = field(default_factory=list, init=False)
+    losses: list[str] = field(default_factory=list, init=False)
+    ties: list[str] = field(default_factory=list, init=False)
 
     @property
     def points(self) -> float:
         return self.hitting_points + self.pitching_points
 
     @property
-    def opponents(self) -> List[str]:
+    def opponents(self) -> list[str]:
         return [*self.losses, *self.ties, *self.wins]
 
     def add(self, player: RosteredPlayer) -> None:
@@ -136,7 +136,7 @@ class PointLeaders:
     position: str
     max_scorers: int
     descending: bool
-    players: List[ScoringPlayer] = field(default_factory=list, init=False)
+    players: list[ScoringPlayer] = field(default_factory=list, init=False)
 
     def add(self, player: ScoringPlayer) -> bool:
         if len(self.players) < self.max_scorers:
@@ -151,17 +151,15 @@ class PointLeaders:
         return False
 
 
-MatchupMode = Enum(
-    "MatchupMode", "BLOWOUT CLOSEST STRONGEST_LOSS WEAKEST_WIN LUCKIEST UNLUCKIEST"
-)
+MatchupMode = Enum("MatchupMode", "BLOWOUT CLOSEST STRONGEST_LOSS WEAKEST_WIN LUCKIEST UNLUCKIEST")
 
 
 @dataclass
 class Matchup:
     team1: Team
     team2: Team
-    teams: Dict[str, Team] = field(compare=False)
-    mode: Optional[MatchupMode] = field(compare=False)
+    teams: dict[str, Team] = field(compare=False)
+    mode: MatchupMode | None = field(compare=False)
 
     def __post_init__(self) -> None:
         team1, team2 = sorted((self.team1, self.team2), reverse=True)
@@ -231,24 +229,22 @@ def generate_summary(scoring_period: int, username: str, password: str) -> None:
                 print(current_soup(browser).prettify())
                 raise ex
 
-    players_by_team = dict(
-        (player.id, team.name) for team in teams for player in team.players
-    )
+    players_by_team = {player.id: team.name for team in teams for player in team.players}
     for point_leaders in leaders:
         for player in point_leaders.players:
             player.team = players_by_team.get(player.id, "FA")
 
-    all_stars = dict(
-        ((point_leaders.position, point_leaders.descending), point_leaders)
+    all_stars = {
+        (point_leaders.position, point_leaders.descending): point_leaders
         for point_leaders in leaders
-    )
+    }
 
-    teams_by_name = dict((team.name, team) for team in teams)
-    matchups = set(
+    teams_by_name = {team.name: team for team in teams}
+    matchups = {
         Matchup(team, teams_by_name[opponent], teams_by_name, None)
         for team in teams
         for opponent in team.opponents
-    )
+    }
 
     markdown = [
         markdown_section(
@@ -315,7 +311,7 @@ def generate_summary(scoring_period: int, username: str, password: str) -> None:
             "Blowout of the Week",
             MarkdownType.BULLET,
             top_scorers(
-                set(matchup.with_mode(MatchupMode.BLOWOUT) for matchup in matchups),
+                {matchup.with_mode(MatchupMode.BLOWOUT) for matchup in matchups},
                 num_scorers=1,
             ),
         ),
@@ -323,7 +319,7 @@ def generate_summary(scoring_period: int, username: str, password: str) -> None:
             "Closest Matchup of the Week",
             MarkdownType.BULLET,
             top_scorers(
-                set(matchup.with_mode(MatchupMode.CLOSEST) for matchup in matchups),
+                {matchup.with_mode(MatchupMode.CLOSEST) for matchup in matchups},
                 descending=False,
                 num_scorers=1,
             ),
@@ -332,11 +328,11 @@ def generate_summary(scoring_period: int, username: str, password: str) -> None:
             "Strongest Loss",
             MarkdownType.BULLET,
             top_scorers(
-                set(
+                {
                     matchup.with_mode(MatchupMode.STRONGEST_LOSS)
                     for matchup in matchups
                     if matchup.points > 0
-                ),
+                },
                 num_scorers=1,
                 points=lambda m: m.team2.points,
             ),
@@ -345,11 +341,11 @@ def generate_summary(scoring_period: int, username: str, password: str) -> None:
             "No Wins for the Effort",
             MarkdownType.BULLET,
             top_scorers(
-                set(
+                {
                     matchup.with_mode(MatchupMode.UNLUCKIEST)
                     for matchup in matchups
                     if not matchup.team2.wins
-                ),
+                },
                 num_scorers=1,
                 points=lambda m: m.team2.points,
             ),
@@ -358,11 +354,11 @@ def generate_summary(scoring_period: int, username: str, password: str) -> None:
             "Weakest Win",
             MarkdownType.BULLET,
             top_scorers(
-                set(
+                {
                     matchup.with_mode(MatchupMode.WEAKEST_WIN)
                     for matchup in matchups
                     if matchup.points > 0
-                ),
+                },
                 descending=False,
                 num_scorers=1,
                 points=lambda m: m.team1.points,
@@ -372,11 +368,11 @@ def generate_summary(scoring_period: int, username: str, password: str) -> None:
             "Dirty Cheater",
             MarkdownType.BULLET,
             top_scorers(
-                set(
+                {
                     matchup.with_mode(MatchupMode.LUCKIEST)
                     for matchup in matchups
                     if not matchup.team1.losses
-                ),
+                },
                 descending=False,
                 num_scorers=1,
                 points=lambda m: m.team1.points,
@@ -390,7 +386,7 @@ def generate_summary(scoring_period: int, username: str, password: str) -> None:
 
 def login(browser: Remote, username: str, password: str) -> None:
     browser.get(LEAGUE_HOME)
-    WebDriverWait(browser, 10).until(expect.url_contains("/login"))
+    WebDriverWait(browser, 30).until(expect.url_contains("/login"))
 
     username_field = browser.find_element(By.NAME, "email")
     username_field.clear()
@@ -405,9 +401,9 @@ def login(browser: Remote, username: str, password: str) -> None:
     browser.refresh()
 
 
-def parse_matchups(browser: Remote, scoring_period: int) -> List[Team]:
+def parse_matchups(browser: Remote, scoring_period: int) -> list[Team]:
     browser.get(f"{LEAGUE_HOME}/scoring/completed/{scoring_period}")
-    teams: Dict[str, Team] = {}
+    teams: dict[str, Team] = {}
     for tag in browser.find_elements(By.CSS_SELECTOR, "table[id^='matchup_hilite_']"):
         browser.find_element(By.CSS_SELECTOR, f"table#{tag.get_property('id')}").click()
 
@@ -433,9 +429,7 @@ def current_soup(browser: Remote) -> BeautifulSoup:
     return BeautifulSoup(browser.page_source, "html.parser")
 
 
-def load_team(
-    home_or_away: str, soup: BeautifulSoup, teams: Dict[str, Team]
-) -> Optional[Team]:
+def load_team(home_or_away: str, soup: BeautifulSoup, teams: dict[str, Team]) -> Team | None:
     team_name = soup.select_one(f".teamname #{home_or_away}_big_name").string.strip()
     if team_name not in DIVISIONS:
         return None
@@ -452,26 +446,18 @@ def load_team(
         active_batter = False
         active_pitcher = False
         active_points = 0.0
-        if active_points_tag := player_tag.select_one(
-            "a.scoreLink[id^=score_total_active]"
-        ):
+        if active_points_tag := player_tag.select_one("a.scoreLink[id^=score_total_active]"):
             active_points = float(active_points_tag.string.strip())
-            active_pitcher = (
-                "P" in player_tag.select_one("a.playerLink").parent.div.string
-            )
+            active_pitcher = "P" in player_tag.select_one("a.playerLink").parent.div.string
             active_batter = not active_pitcher
 
         name, id_number = player_name_and_id(player_tag, "title")
-        team.add(
-            RosteredPlayer(
-                name, id_number, active_points, active_batter, active_pitcher
-            )
-        )
+        team.add(RosteredPlayer(name, id_number, active_points, active_batter, active_pitcher))
 
     return team
 
 
-def player_name_and_id(soup: Tag, name_tag: str) -> Tuple[str, int]:
+def player_name_and_id(soup: Tag, name_tag: str) -> tuple[str, int]:
     try:
         info_tag = soup.select_one("a.playerLink")
         name_match = re.match(r"^\s*(.+)\s+[A-Z1-3]+\s+[A-Z]+\s*$", info_tag[name_tag])
@@ -490,7 +476,7 @@ def player_name_and_id(soup: Tag, name_tag: str) -> Tuple[str, int]:
         ) from ex
 
 
-def parse_point_leaders(browser: Remote, scoring_period: int) -> List[PointLeaders]:
+def parse_point_leaders(browser: Remote, scoring_period: int) -> list[PointLeaders]:
     leaders = []
 
     num_all_stars = sum(ALL_STAR_POSITIONS.values())
@@ -507,9 +493,7 @@ def parse_point_leaders(browser: Remote, scoring_period: int) -> List[PointLeade
     return leaders
 
 
-def point_leader_soups(
-    browser: Remote, scoring_period: int, position: str
-) -> List[Tag]:
+def point_leader_soups(browser: Remote, scoring_period: int, position: str) -> list[Tag]:
     browser.get(
         f"{LEAGUE_HOME}/stats/data-stats-report/all"
         f":{position}/period-{scoring_period}/standard/stats?print_rows=9999"
@@ -518,7 +502,7 @@ def point_leader_soups(
 
 
 def point_leaders(
-    soups: List[Tag], position: str, max_scorers: int, descending: bool
+    soups: list[Tag], position: str, max_scorers: int, descending: bool
 ) -> PointLeaders:
     point_leaders = PointLeaders(position, max_scorers, descending)
 
@@ -547,7 +531,7 @@ def point_leaders(
     return point_leaders
 
 
-def markdown_section(header: str, type: MarkdownType, lines: List[str]) -> str:
+def markdown_section(header: str, type: MarkdownType, lines: list[str]) -> str:
     if not lines:
         return ""
     delimiter = "\n"
@@ -564,7 +548,7 @@ def top_scorers(
     descending: bool = True,
     num_scorers: int = 3,
     points: Callable[[T], float] = lambda s: s.points,
-) -> List[str]:
+) -> list[str]:
     lines = []
 
     index_adjustment = 1
@@ -587,7 +571,7 @@ def ranked_scorers(
     descending: bool,
     num_scorers: int,
     points: Callable[[T], float],
-) -> List[Tuple[float, List[T]]]:
+) -> list[tuple[float, list[T]]]:
     return sorted(
         [
             (group_points, list(group))
@@ -652,11 +636,11 @@ def points_string(points: float) -> str:
     return f"{points} point" if points == 1 else f"{points} points"
 
 
-def all_star_lineup(all_stars: Iterable[PointLeaders]) -> List[str]:
+def all_star_lineup(all_stars: Iterable[PointLeaders]) -> list[str]:
     scorers = {}
     scorer_positions = defaultdict(set)
     position_scorers = defaultdict(set)
-    lineup_candidates: Dict[str, List[int]] = defaultdict(list)
+    lineup_candidates: dict[str, list[int]] = defaultdict(list)
 
     for leaders in all_stars:
         if leaders.position not in ALL_STAR_POSITIONS:
@@ -687,13 +671,11 @@ def all_star_lineup(all_stars: Iterable[PointLeaders]) -> List[str]:
         if len(lineup_candidates[position]) < count
     ]:
         lacking_position_scorers = [
-            scorer
-            for position in lacking_positions
-            for scorer in position_scorers[position]
+            scorer for position in lacking_positions for scorer in position_scorers[position]
         ]
         add_new_scorers(lacking_position_scorers, 1)
 
-    lineup_options: List[List[int]] = [
+    lineup_options: list[list[int]] = [
         list(lineup_candidates[position])
         for position, count in ALL_STAR_POSITIONS.items()
         for _ in range(0, count)
@@ -727,12 +709,12 @@ def all_star_lineup(all_stars: Iterable[PointLeaders]) -> List[str]:
     return [
         f"{position}: {scorer_string(scorers[player], scorers[player].points)}"
         for lineup in lineups
-        for position, player in zip(positions, lineup)
+        for position, player in zip(positions, lineup, strict=False)
     ]
 
 
-def division_table(teams: List[Team]) -> List[str]:
-    divisions: Dict[str, List[Team]] = OrderedDict()
+def division_table(teams: list[Team]) -> list[str]:
+    divisions: dict[str, list[Team]] = OrderedDict()
     for team in teams:
         divisions.setdefault(DIVISIONS[team.name], []).append(team)
 
@@ -741,7 +723,7 @@ def division_table(teams: List[Team]) -> List[str]:
 
     scores = [
         [team.points for team in division_teams]
-        for division_teams in list(divisions.values()) + [teams]
+        for division_teams in [*list(divisions.values()), teams]
     ]
 
     records = [
@@ -753,18 +735,14 @@ def division_table(teams: List[Team]) -> List[str]:
         for division, div_teams in divisions.items()
     ]
 
-
     table = [
-        [f"**{name}**" for name in ["Division"] + list(divisions.keys()) + ["League"]],
+        [f"**{name}**" for name in ["Division", *list(divisions.keys()), "League"]],
         [":---:"] * (len(divisions) + 2),
         ["**Points**"] + [str(sum(points)) for points in scores],
         ["**Points/Team**"] + [str(round(statistics.mean(s), 1)) for s in scores],
         ["**Std. Deviation**"] + [str(round(statistics.stdev(s), 1)) for s in scores],
         ["**Record**"]
-        + [
-            f"{wins}-{losses}-{ties}".removesuffix("-0")
-            for wins, losses, ties in records
-        ]
+        + [f"{wins}-{losses}-{ties}".removesuffix("-0") for wins, losses, ties in records]
         + [""],
     ]
     return [f"| {' | '.join(row)} |" for row in table]
