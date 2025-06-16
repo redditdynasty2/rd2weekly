@@ -3,6 +3,7 @@ services:
     image: selenium/standalone-firefox:latest
     ports: 
       - "4444:4444"
+      - "5900:5900"
     healthcheck:
       test: [CMD, /opt/bin/check-grid.sh]
       timeout: 0.25s
