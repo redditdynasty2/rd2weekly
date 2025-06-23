@@ -189,15 +189,12 @@ class MarkdownType(Enum):
 
 class WebDriver:
     def __init__(self):
-        self.driver: str | None = None
+        self.driver: Callable[[], str] = lambda: subprocess.check_output(
+            "docker compose port selenium 4444", shell=True, text=True
+        ).strip()
 
     def __enter__(self) -> "WebDriver":
         subprocess.run("docker compose up --wait", check=True, shell=True)
-        self.driver = subprocess.check_output(
-            "docker compose port selenium 4444",
-            shell=True,
-            text=True,
-        ).strip()
         return self
 
     def __exit__(
@@ -216,10 +213,10 @@ class WebDriver:
 @click.option("-u", "--username", type=str, prompt="Your CBS username")
 @click.option("-p", "--password", type=str, prompt="Your CBS password")
 def generate_summary(scoring_period: int, username: str, password: str) -> None:
-    with WebDriver() as _:
+    with WebDriver() as driver:
         driver_options = Options()
         driver_options.add_argument("--headless=new")
-        with Remote(options=driver_options) as browser:
+        with Remote(options=driver_options, command_executor=driver.driver()) as browser:
             login(browser, username, password)
 
             try:
@@ -397,7 +394,7 @@ def login(browser: Remote, username: str, password: str) -> None:
     password_field.send_keys(password)
 
     browser.find_element(By.CSS_SELECTOR, "button[type=submit]").click()
-    WebDriverWait(browser, 10).until(expect.url_contains(LEAGUE_HOME))
+    WebDriverWait(browser, 30).until(expect.url_contains(LEAGUE_HOME))
     browser.refresh()
 
 
