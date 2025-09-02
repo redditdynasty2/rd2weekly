@@ -9,6 +9,6 @@ services:
       - 5900
     healthcheck:
       test: [CMD, /opt/bin/check-grid.sh]
-      timeout: 0.25s
-      interval: 0.5s
+      timeout: 1s
+      interval: 1s
       retries: 25
